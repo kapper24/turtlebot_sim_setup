@@ -1,12 +1,15 @@
+#!/usr/bin/env python
+
 import rospy
 from nav_msgs.msg import OccupancyGrid 
+import numpy
     
 
 def callback(data):
     map_w = data.info.width
     map_h = data.info.height
     rawdata = data.data 
-    sorted_map = []
+    sorted_map = numpy.empty(map_h, map_w)
     for i in range(map_w): 
         for j in range(map_h): 
 
@@ -23,16 +26,10 @@ def callback(data):
 
 def listener():
 
-    # In ROS, nodes are uniquely named. If two nodes with the same
-    # name are launched, the previous one is kicked off. The
-    # anonymous=True flag means that rospy will choose a unique
-    # name for our 'listener' node so that multiple listeners can
-    # run simultaneously.
     rospy.init_node('map_listener', anonymous=True)
 
     rospy.Subscriber("/map", OccupancyGrid, callback)
 
-    # spin() simply keeps python from exiting until this node is stopped
     rospy.spin()
 
 if __name__ == '__main__':
