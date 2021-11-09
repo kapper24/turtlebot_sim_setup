@@ -9,11 +9,9 @@ def callback(data):
     map_w = data.info.width
     map_h = data.info.height
     rawdata = data.data 
-    sorted_map = numpy.empty(map_h, map_w)
+    sorted_map = numpy.empty((int(map_h), int(map_w)))
     for i in range(map_w): 
         for j in range(map_h): 
-
-            float()
             if rawdata[i + j * map_w] == -1:
                 sorted_map[i][j] = float(0.5)
             else:
