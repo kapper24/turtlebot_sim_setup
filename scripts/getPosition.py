@@ -8,7 +8,7 @@ import numpy
 def listener():
     rospy.init_node("tf_listener", anonymous = True)
     listener = tf.TransformListener()
-    rate = rospy.Rate(10,0)
+    pose = numpy.empty((2, 1))
     while not rospy.is_shutdown():
         try:
             (trans,rot) = listener.lookupTransform('/map', '/base_link', rospy.Time(0))
@@ -16,7 +16,10 @@ def listener():
             yPose = trans[1]
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             continue
-    pose =  numpy.array(xPose, yPose)
+        pose[0] = float(xPose) 
+        pose[1] = float(yPose)
+        print(pose)
+
 
 
 
