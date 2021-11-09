@@ -1,10 +1,25 @@
 import rospy
-from sensor_msgs.msg import Image
-from nav_msgs.msg import MapMetaData
+from nav_msgs.msg import OccupancyGrid 
+    
 
 def callback(data):
-    pub = rospy.Publisher('', Image, queue_size=10)
-    pub.publish(data)
+    map_w = data.info.width
+    map_h = data.info.height
+    rawdata = data.data 
+    sorted_map = []
+    for i in range(map_w): 
+        for j in range(map_h): 
+
+            float()
+            if rawdata[i + j * map_w] == -1:
+                sorted_map[i][j] = float(0.5)
+            else:
+                sorted_map[i][j] = float(rawdata[i + j * map_w]/100)
+    print(sorted_map)
+
+
+    
+
 
 def listener():
 
@@ -15,7 +30,7 @@ def listener():
     # run simultaneously.
     rospy.init_node('map_listener', anonymous=True)
 
-    rospy.Subscriber("", MapMetaData, callback)
+    rospy.Subscriber("/map", OccupancyGrid, callback)
 
     # spin() simply keeps python from exiting until this node is stopped
     rospy.spin()
