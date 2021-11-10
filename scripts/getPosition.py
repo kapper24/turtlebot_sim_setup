@@ -1,24 +1,28 @@
 #!/usr/bin/env python
 
 import rospy
+from rospy.topics import Publisher
 import tf
 from tf import listener
-import numpy
+from std_msgs.msg import Float64MultiArray
 
 def listener():
     rospy.init_node("tf_listener", anonymous = True)
+    pub = rospy.Publisher("/obs0", Float64MultiArray, queue_size=10)
     listener = tf.TransformListener()
-    pose = numpy.empty((2, 1))
+    posmsg = Float64MultiArray() 
     while not rospy.is_shutdown():
         try:
             (trans,rot) = listener.lookupTransform('/map', '/base_link', rospy.Time(0))
-            xPose = trans[0]
-            yPose = trans[1]
+            posmsg[0] = trans[0]
+            posmsg[1] = trans[1]
+            pub.publish(posmsg)
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             continue
-        pose[0] = float(xPose) 
-        pose[1] = float(yPose)
-        print(pose)
+        
+
+
+
 
 
 

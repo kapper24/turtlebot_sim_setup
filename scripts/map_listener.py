@@ -25,7 +25,6 @@ def callback(data):
 def listener():
 
     rospy.init_node('map_listener', anonymous=True)
-
     rospy.Subscriber("/map", OccupancyGrid, callback)
 
     rospy.spin()
