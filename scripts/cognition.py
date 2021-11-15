@@ -48,7 +48,7 @@ def listener():
 
 
 def cognitive_exploration():
-    meter2pixel = 1  # X pixel = 1 meter
+    meter2pixel = 10  # X pixel = 1 meter
     robotRadius = 0.5 / meter2pixel  # robot radius in meter
     lidar_range = 4  # laser range in pixel
     lidar_FOV = 6  # laser field of view in rad

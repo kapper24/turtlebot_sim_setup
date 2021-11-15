@@ -4,8 +4,10 @@ import pyro
 import pyro.distributions as dist
 import numpy as np
 import matplotlib
+import matplotlib.pyplot as plt
 
-
+from lidarmodel import p_z_Lidar_prior, p_z_Lidar_posterior, p_z_Map_prior, lidar_generate_obs_labels
+from constraints import P_z_C1, P_z_C2
 from barrierfunctions import sigmoidSS
 
 
@@ -172,6 +174,7 @@ class RobotExploration(Planning):
                 # calculate attention
                 P_z_A[i, j] = self._Planning__P_z_A_tau(P_z_d[i, j], P_z_p[i, j], P_z_i[i, j], P_z_c[i, j])
 
+
     # ################### Abstract methods of the class Planning ####################
     def q_z_a_tau(self, z_s_tauMinus1, k):
         alpha_init = torch.tensor([[10000., 10000.], [10000., 10000.]], dtype=torch.float)
@@ -198,6 +201,63 @@ class RobotExploration(Planning):
         z_s = pyro.sample("z_s", _p_z_s_tau)
         return z_s
 
+    # def P_z_c_tau(self, z_s_tau, z_s_tauMinus1):
+    #     # ################### SOMETHING NEEDS TO BE DONE WITH THE CONSTRAINTS!!! ###################
+    #     # params = {}
+    #     # params["lidarParams"] = self.params["lidarParams"]
+    #     self.params["map"] = self.LTM["map_grid_probabilities"]
+
+    #     _P_z_C1 = P_z_C1(z_s_tau, self.params)
+    #     return [_P_z_C1]
+    #     # _P_z_C2 = P_z_C2(z_s_tau, z_s_tauMinus1, self.params)
+    #     # return [_P_z_C1, _P_z_C2]
+
+    def I_c_tau(self, z_s_tau, z_s_tauMinus1):
+        # d_min = torch.tensor(0.5)
+        position = z_s_tau  # z_s_tau["position"]
+        map_grid_probabilities = self.LTM["map_grid_probabilities"]
+        lidar_generate_obs_labels(self.params["lidarParams_constraints"])  # to resamble beam angles...
+        z_Map = p_z_Map_prior(position, map_grid_probabilities, self.params["lidarParams_constraints"])
+
+        I_c = []
+        for key in z_Map:
+            if z_Map[key] is None:
+                I_c.append(torch.tensor(1.0))
+            else:
+                dist = z_Map[key]
+                I_c.append(1 - sigmoidSS(dist, self.params["P_z_C1_scale"], self.params["x_min"], self.params["x_max"]))
+                # if z_Map[key] > d_min:
+                #     I_c.append(torch.tensor(1.0))
+                # else:
+                #     I_c.append(torch.tensor(0.0))
+
+        return I_c
+
+    def p_z_LTM(self, z_s_tau):
+        position = z_s_tau  # z_s_tau["position"]
+        map_grid_probabilities = self.LTM["map_grid_probabilities"]
+        z_Map = p_z_Map_prior(position, map_grid_probabilities, self.params["lidarParams"])
+        z_LTM = {}
+        z_LTM["z_Map"] = z_Map
+        return z_LTM
+
+    def p_z_PB(self, z_s_tau):
+        p_z_Lidar_prior(self.params["lidarParams"])
+
+    def p_z_PB_posterior(self, z_s_tau, z_LTM):
+        z_Map = z_LTM["z_Map"]
+        p_z_Lidar_posterior(z_Map, self.params["lidarParams"])
+
+    def generate_obs_labels(self):
+        observation_labels = lidar_generate_obs_labels(self.params["lidarParams"])
+        return observation_labels
+
+    # ################### other methods ####################
+    def action_transforme(self, z_a):
+        # scaling parameters for the action
+        a_offset = -self.params["a_support"] / torch.tensor([2.], dtype=torch.float)
+
+        return self.params["a_support"] * z_a + a_offset
 
 
 # ################### TODO ###################
