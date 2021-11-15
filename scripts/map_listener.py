@@ -16,7 +16,7 @@ def callback(data):
                 sorted_map[i][j] = float(0.5)
             else:
                 sorted_map[i][j] = float(rawdata[i + j * map_w]/100)
-    print(sorted_map)
+    
 
 
     
