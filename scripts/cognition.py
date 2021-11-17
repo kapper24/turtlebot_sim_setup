@@ -50,15 +50,15 @@ def listener():
 
 
 def cognitive_exploration(client):
-    meter2pixel = 10  # X pixel = 1 meter
-    robotRadius = 0.5 / meter2pixel  # robot radius in meter
-    lidar_range = 4  # laser range in pixel
-    lidar_FOV = 6  # laser field of view in rad
-    lidar_resolution = 0.1  # laser rotation resolution in rad
+    meter2pixel = 20  # X pixel = 1 meter
+    robotRadius = 0.18 / meter2pixel  # robot radius in meter
+    lidar_range = 70  # laser range in pixel
+    lidar_FOV = 3.28  # laser field of view in rad
+    lidar_resolution = 6.28/360  # laser rotation resolution in rad
     lidar_sigma_hit = 0.1  # sigma of Gaussian distribution of laser noise
-    d_min = robotRadius + 0.05  # we add a small buffer of 5 cm - d_min = 0.25 m
+    d_min = robotRadius + 0.2  # we add a small buffer of 5 cm - d_min = 0.25 m
     agent = RobotExploration(meter2pixel, lidar_range, lidar_FOV, lidar_resolution, lidar_sigma_hit, d_min)
-    T_delta = 2
+    T_delta = 1
     act = numpy.zeros(3)  # start by doing nothing!
     t = 0
 
