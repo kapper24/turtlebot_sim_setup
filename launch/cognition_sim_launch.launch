@@ -4,5 +4,14 @@
   <include file="$(find turtlebot3_slam)/launch/turtlebot3_slam.launch"/>
   <include file="$(find turtlebot3_navigation)/launch/move_base.launch"/>
   <node name="getPosition" pkg="turtlebot_sim_setup" type="getPosition.py" respawn="true" />
-  <node name="cognition" pkg="turtlebot_sim_setup" type="cognition.py" respawn="true" />
+  <group ns="cognition_params">
+    <param name="/pixelsprmeter" type="" value="" />
+    <param name="/robotradius" type="" value="" />
+    <param name="/" type="" value="" />
+    <param name="/" type="" value="" />
+    <param name="/" type="" value="" />
+    <param name="/" type="" value="" />
+    <param name="/" type="" value="" />
+    <node name="cognition" pkg="turtlebot_sim_setup" type="cognition.py" respawn="true" />
+  </group>
 </launch>
