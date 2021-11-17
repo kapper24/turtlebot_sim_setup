@@ -9,9 +9,9 @@
     <param name="/robotradius" type="" value="" />
     <param name="/" type="" value="" />
     <param name="/" type="" value="" />
-    <param name="/" type="" value="" />
-    <param name="/" type="" value="" />
-    <param name="/" type="" value="" />
+    <param name="/laserresolution" type="float" value="0.01744" />
+    <param name="/lasernoise" type="float" value="0.1" />
+    <param name="/mindistance" type="float" value="0.2" />
     <node name="cognition" pkg="turtlebot_sim_setup" type="cognition.py" respawn="true" />
   </group>
 </launch>
