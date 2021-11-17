@@ -7,7 +7,7 @@
   <group ns="cognition_params">
     <param name="/laserresolution" type="double" value="0.01744" />
     <param name="/lasernoise" type="double" value="0.1" />
-    <param name="/mindistance" type="double" value="0.2" />
+    <param name="/mindistance" type="double" value="0.2" /> <!--this number is added to the radius of the robot default radius + 0.2-->
     <param name="/pixelsprmeter" type="double" value="20" />
     <param name="/robotradius" type="double" value="0.18" />
     <param name="/pixellaserrange" type="double" value="70" />
