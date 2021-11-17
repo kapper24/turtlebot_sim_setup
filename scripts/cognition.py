@@ -16,6 +16,13 @@ from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 import time
 from RobotExploration import RobotExploration
 
+meter2pixel = rospy.get_param("/cognition/pixelsprmeter", 20)  # X pixel = 1 meter
+robotRadius = rospy.get_param("/cognition/robotradius", 0.18 / meter2pixel)  # robot radius in meter
+lidar_range = rospy.get_param("/cognition/pixellaserrange", 70)  # laser range in pixel
+lidar_FOV = rospy.get_param("/cognition/laserfow", 3.28)  # laser field of view in rad
+lidar_resolution = rospy.get_param("/cognition/laserresolution", 6.28/360)  # laser rotation resolution in rad
+lidar_sigma_hit = rospy.get_param("/cognition/lasernoise", 0.1)  # sigma of Gaussian distribution of laser noise
+d_min = robotRadius + rospy.get_param("/cognition/mindistance", 0.2)  # we add a small buffer of 5 cm - d_min = 0.25 m
 
 sorted_map = numpy.ones((int(100), int(100)))
 pose = numpy.ones((2, 1))
@@ -50,13 +57,7 @@ def listener():
 
 
 def cognitive_exploration(client):
-    meter2pixel = rospy.get_param("/pixelsprmeter", 20)  # X pixel = 1 meter
-    robotRadius = rospy.get_param("/robotradius", 0.18 / meter2pixel)  # robot radius in meter
-    lidar_range = rospy.get_param("/pixellaserrange", 70)  # laser range in pixel
-    lidar_FOV = rospy.get_param("/laserfow", 3.28)  # laser field of view in rad
-    lidar_resolution = rospy.get_param("/laserresolution", 6.28/360)  # laser rotation resolution in rad
-    lidar_sigma_hit = rospy.get_param("/lasernoise", 0.1)  # sigma of Gaussian distribution of laser noise
-    d_min = robotRadius + rospy.get_param("/mindistance", 0.2)  # we add a small buffer of 5 cm - d_min = 0.25 m
+    print(d_min)
     agent = RobotExploration(meter2pixel, lidar_range, lidar_FOV, lidar_resolution, lidar_sigma_hit, d_min)
     T_delta = 1
     act = numpy.zeros(3)  # start by doing nothing!

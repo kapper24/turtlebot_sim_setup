@@ -1,13 +1,12 @@
 <launch>
   <node name="getPosition" pkg="turtlebot_sim_setup" type="getPosition.py" respawn="true" />
-  <group ns="cognition_params">
-    <param name="/laserresolution" type="double" value="0.01744" />
-    <param name="/lasernoise" type="double" value="0.1" />
-    <param name="/mindistance" type="double" value="0.2" />
-    <param name="/pixelsprmeter" type="double" value="20" />
-    <param name="/robotradius" type="double" value="0.18" />
-    <param name="/pixellaserrange" type="double" value="70" />
-    <param name="/laserfow" type="double" value="6.28" />
-    <node name="cognition" pkg="turtlebot_sim_setup" type="cognition.py" respawn="true" />
-  </group>
+  <node name="cognition" pkg="turtlebot_sim_setup" type="cognition.py" respawn="true" >
+    <param name="laserresolution" value="0.01744" />
+    <param name="lasernoise" value="0.1" />
+    <param name="mindistance" value="0.2" /> <!--this number is added to the radius of the robot default radius + 0.2-->
+    <param name="pixelsprmeter" value="20" />
+    <param name="robotradius" value="0.18" />
+    <param name="pixellaserrange" value="70" />
+    <param name="laserfow" value="6.28" />
+  </node>
 </launch>
