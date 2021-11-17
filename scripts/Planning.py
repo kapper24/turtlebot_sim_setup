@@ -57,15 +57,17 @@ class Planning(ABC):
 
     def makePlan(self, t, T_delta, p_z_s_t, LTM, N_posterior_samples=1):
         # T_delta: number of timesteps to predict into to future
+        
         self.T_delta = T_delta
         T = torch.tensor([t + self.T_delta])
-
+        
         # update the LTM store
         self.LTM = LTM
-
+        
         # add current state distribution to p_z_s_Minus and maybe delete TOO old state distributions that will not be used anymore!
         # self.p_z_s_Minus.append(p_z_s_t)
         self.p_z_s_Minus.append(poutine.trace(p_z_s_t).get_trace())
+        print("aaaaaaaaa")
         # self.p_z_s_Minus.append(poutine.trace(p_z_s_t).get_trace().nodes["z_s"]["fn"])
         self.params["N_old_states"] = len(self.p_z_s_Minus)
         if len(self.p_z_s_Minus) > self.params["N_old_states_to_consider"]:
@@ -322,15 +324,6 @@ class Planning(ABC):
         #   .sample()
         #   .log_prob(z)
         raise NotImplementedError
-
-    # @abstractmethod
-    # def P_z_c_tau(self, z_s_tau, z_s_tauMinus1):
-    #     # returns list of constraint probabilities on the form
-    #     # 1 - e^(-k * c_i(z_s_tau, z_s_tauMinus1)) for maximization of c_i(...)
-    #     # or
-    #     # e^(-k * c_i(z_s_tau, z_s_tauMinus1)) for minimization of c_i(...)
-    #     # where c_i(...) are non-negative functions
-    #     raise NotImplementedError
 
     @abstractmethod
     def I_c_tau(self, z_s_tau, z_s_tauMinus1):

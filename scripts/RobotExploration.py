@@ -94,7 +94,7 @@ class RobotExploration(Planning):
         LTM = {}
         LTM["map_grid_probabilities"] = map_grid_probabilities
         z_a_tauPlus_samples, z_s_tauPlus_samples = super().makePlan(t, T_delta, p_z_s_t, LTM, N_posterior_samples=self.N_posterior_samples)
-
+    
         if not (return_mode == "mean" or return_mode == "raw_samples" or return_mode == "random"):
             return_mode == "random"
 

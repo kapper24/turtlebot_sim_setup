@@ -66,7 +66,7 @@ def cognitive_exploration():
     time_pr_iteration = []
 
     while not rospy.is_shutdown():
-        position = [pose[0], pose[1]]  # we only use the position not the heading
+        position = numpy.array([pose[0], pose[1]])  # we only use the position not the heading
         map_grid_probabilities_np = sorted_map.copy()
         map_grid_probabilities = torch.from_numpy(map_grid_probabilities_np)
         map_grid_probabilities = torch.flip(map_grid_probabilities, [0])
