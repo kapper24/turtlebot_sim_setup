@@ -101,6 +101,7 @@ def cognitive_exploration(client):
         goal.target_pose.pose.position.y = act[1]
         goal.target_pose.pose.orientation.w = 1.0
         client.send_goal(goal)
+        wait = client.wait_for_result()
         t += 1
 
 if __name__ == '__main__':

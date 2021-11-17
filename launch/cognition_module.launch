@@ -1,0 +1,4 @@
+<launch>
+  <node name="getPosition" pkg="turtlebot_sim_setup" type="getPosition.py" respawn="true" />
+  <node name="cognition" pkg="turtlebot_sim_setup" type="cognition.py" respawn="true" />
+</launch>
