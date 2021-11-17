@@ -67,7 +67,7 @@ class Planning(ABC):
         # add current state distribution to p_z_s_Minus and maybe delete TOO old state distributions that will not be used anymore!
         # self.p_z_s_Minus.append(p_z_s_t)
         self.p_z_s_Minus.append(poutine.trace(p_z_s_t).get_trace())
-        print("aaaaaaaaa")
+        
         # self.p_z_s_Minus.append(poutine.trace(p_z_s_t).get_trace().nodes["z_s"]["fn"])
         self.params["N_old_states"] = len(self.p_z_s_Minus)
         if len(self.p_z_s_Minus) > self.params["N_old_states_to_consider"]:

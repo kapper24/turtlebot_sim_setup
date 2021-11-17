@@ -9,12 +9,16 @@ import pyro.distributions as dist
 from datetime import datetime
 from nav_msgs.msg import OccupancyGrid
 from std_msgs.msg import Float64MultiArray
+from geometry_msgs.msg import PoseStamped
+import actionlib
+from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
+
 import time
 from RobotExploration import RobotExploration
 
 
-sorted_map = numpy.empty((int(1), int(1)))
-pose = numpy.empty((2, 1))
+sorted_map = numpy.ones((int(100), int(100)))
+pose = numpy.ones((2, 1))
 T_delta = 2
 
 def map_callback(map_data):
@@ -30,7 +34,6 @@ def map_callback(map_data):
                 sorted_map[i][j] = float(rawdata[i + j * map_w]/100)
 
 def position_callback(pos_data):
-    pose = numpy.empty((2, 1))
     pose[0] = float(pos_data.data[0]) 
     pose[1] = float(pos_data.data[1])
 
@@ -39,15 +42,14 @@ def listener():
     rospy.init_node('cognition', anonymous=True)
     rospy.Subscriber("/map", OccupancyGrid, map_callback)
     rospy.Subscriber("/obs0", Float64MultiArray, position_callback)
-    
-    
-    
-    cognitive_exploration()
+    client = actionlib.SimpleActionClient('move_base',MoveBaseAction)
+    client.wait_for_server()
+    cognitive_exploration(client)
         
         
 
 
-def cognitive_exploration():
+def cognitive_exploration(client):
     meter2pixel = 10  # X pixel = 1 meter
     robotRadius = 0.5 / meter2pixel  # robot radius in meter
     lidar_range = 4  # laser range in pixel
@@ -66,7 +68,7 @@ def cognitive_exploration():
     time_pr_iteration = []
 
     while not rospy.is_shutdown():
-        position = numpy.array([pose[0], pose[1]])  # we only use the position not the heading
+        position = numpy.array([pose[0][0], pose[1][0]])  # we only use the position not the heading
         map_grid_probabilities_np = sorted_map.copy()
         map_grid_probabilities = torch.from_numpy(map_grid_probabilities_np)
         map_grid_probabilities = torch.flip(map_grid_probabilities, [0])
@@ -85,17 +87,21 @@ def cognitive_exploration():
         z_a_tPlus_samples, z_s_tPlus_samples = agent.makePlan(t, T_delta, p_z_s_t, map_grid_probabilities, return_mode="raw_samples")
 
         z_a_tPlus, z_s_tPlus_ = agent.calculate_mean_state_action_means(z_a_tPlus_samples, z_s_tPlus_samples)
-        z_a_tPlus = z_a_tPlus_samples[0]
         z_s_tPlus_ = z_s_tPlus_samples[0]
         toc = time.time()
         time_pr_iteration.append(toc - tic)
 
             #convert plan to the format used by the simulator
-        act[0] = z_a_tPlus[0].numpy()[0]
-        act[1] = z_a_tPlus[0].numpy()[1]
+        act[0] = z_s_tPlus_[0].numpy()[0]
+        act[1] = z_s_tPlus_[0].numpy()[1]
+        goal = MoveBaseGoal()
+        goal.target_pose.header.frame_id = "map"
+        goal.target_pose.header.stamp = rospy.Time.now()
+        goal.target_pose.pose.position.x = act[0]
+        goal.target_pose.pose.position.y = act[1]
+        goal.target_pose.pose.orientation.w = 1.0
+        client.send_goal(goal)
         t += 1
-        return act
-#
 
 if __name__ == '__main__':
     listener()
