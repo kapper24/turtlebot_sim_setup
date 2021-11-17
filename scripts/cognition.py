@@ -53,7 +53,7 @@ def cognitive_exploration(client):
     meter2pixel = rospy.get_param("/pixelsprmeter", 20)  # X pixel = 1 meter
     robotRadius = rospy.get_param("/robotradius", 0.18 / meter2pixel)  # robot radius in meter
     lidar_range = rospy.get_param("/pixellaserrange", 70)  # laser range in pixel
-    lidar_FOV = rospy.get_param("/laserfow", 3.28)  # laser field of view in rad
+    lidar_FOV = rospy.get_param("/laserfow", 6.28)  # laser field of view in rad
     lidar_resolution = rospy.get_param("/laserresolution", 6.28/360)  # laser rotation resolution in rad
     lidar_sigma_hit = rospy.get_param("/lasernoise", 0.1)  # sigma of Gaussian distribution of laser noise
     d_min = rospy.get_param("/mindistance", robotRadius + 0.2)  # we add a small buffer of 5 cm - d_min = 0.25 m
