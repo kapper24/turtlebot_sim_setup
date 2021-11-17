@@ -56,7 +56,7 @@ def cognitive_exploration(client):
     lidar_FOV = rospy.get_param("/laserfow", 3.28)  # laser field of view in rad
     lidar_resolution = rospy.get_param("/laserresolution", 6.28/360)  # laser rotation resolution in rad
     lidar_sigma_hit = rospy.get_param("/lasernoise", 0.1)  # sigma of Gaussian distribution of laser noise
-    d_min = rospy.get_param("/mindistance", robotRadius + 0.2)  # we add a small buffer of 5 cm - d_min = 0.25 m
+    d_min = robotRadius + rospy.get_param("/mindistance", 0.2)  # we add a small buffer of 5 cm - d_min = 0.25 m
     agent = RobotExploration(meter2pixel, lidar_range, lidar_FOV, lidar_resolution, lidar_sigma_hit, d_min)
     T_delta = 1
     act = numpy.zeros(3)  # start by doing nothing!
