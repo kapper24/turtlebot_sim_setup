@@ -8,7 +8,7 @@
     <param name="/pixelsprmeter" type="" value="" />
     <param name="/laserresolution" type="float" value="0.01744" />
     <param name="/lasernoise" type="float" value="0.1" />
-    <param name="/mindistance" type="float" value="0.2" />
+    <param name="/mindistance" type="float" value="0.2" /> <!--this number is added to the radius of the robot default radius + 0.2-->
     <param name="/pixelsprmeter" type="float" value="20" />
     <param name="/robotradius" type="float" value="0.18" />
     <param name="/pixellaserrange" type="float" value="70" />
