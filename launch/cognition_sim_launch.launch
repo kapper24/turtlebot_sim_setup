@@ -3,14 +3,5 @@
   <include file="$(find turtlebot3_gazebo)/launch/turtlebot3_house.launch"/>
   <include file="$(find turtlebot3_slam)/launch/turtlebot3_slam.launch"/>
   <include file="$(find turtlebot3_navigation)/launch/move_base.launch"/>
-  <node name="getPosition" pkg="turtlebot_sim_setup" type="getPosition.py" respawn="true" />
-  <node name="cognition" pkg="turtlebot_sim_setup" type="cognition.py" respawn="true" >
-    <param name="laserresolution" value="0.01744" />
-    <param name="lasernoise" value="0.1" />
-    <param name="mindistance" value="0.2" /> <!--this number is added to the radius of the robot default radius + 0.2-->
-    <param name="pixelsprmeter" value="20" />
-    <param name="robotradius" value="0.18" />
-    <param name="pixellaserrange" value="70" />
-    <param name="laserfow" value="6.28" />
-  </node>
+  <include file="$(find turtlebot_sim_setup)/launch/cognition_module.launch"/>
 </launch>
