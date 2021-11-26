@@ -372,4 +372,3 @@ def p_z_Lidar_posterior(z_Map, lidarParams):
             z_lidar["z_beam_" + str(n)] = z_beam_n
 
     return z_lidar
-

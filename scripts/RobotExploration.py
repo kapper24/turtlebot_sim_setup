@@ -31,7 +31,7 @@ class RobotExploration(Planning):
 
         self.N_posterior_samples = 30
 
-        desirability_scale_factor = 1.0
+        desirability_scale_factor = 0.1
         # progress_scale_factor = 0.01
         # info_gain_scale_factor = 0.0075
         progress_scale_factor = 0.01
@@ -71,7 +71,7 @@ class RobotExploration(Planning):
         self.params["lidarParams"] = lidarParams
 
         # constraint params
-        #d_min = 0.15
+        # d_min = 0.15
         self.params["P_z_C1_scale"] = torch.tensor([15], dtype=torch.float)
         self.params["x_min"] = torch.tensor([0.0], dtype=torch.float)
         self.params["x_max"] = torch.tensor([2 * d_min], dtype=torch.float)
@@ -90,11 +90,11 @@ class RobotExploration(Planning):
                          progress_scale_factor=progress_scale_factor,
                          info_gain_scale_factor=info_gain_scale_factor)
 
-    def makePlan(self, t, T_delta, p_z_s_t, map_grid_probabilities, return_mode="mean", show_attention_map=False):
+    def makePlan(self, t, T_delta, p_z_s_t, map_grid_probabilities, return_mode="mean", show_attention_map=False, p_z_g=None):
         LTM = {}
         LTM["map_grid_probabilities"] = map_grid_probabilities
-        z_a_tauPlus_samples, z_s_tauPlus_samples = super().makePlan(t, T_delta, p_z_s_t, LTM, N_posterior_samples=self.N_posterior_samples)
-    
+        z_a_tauPlus_samples, z_s_tauPlus_samples = super().makePlan(t, T_delta, p_z_s_t, LTM, N_posterior_samples=self.N_posterior_samples, p_z_g=p_z_g)
+
         if not (return_mode == "mean" or return_mode == "raw_samples" or return_mode == "random"):
             return_mode == "random"
 
@@ -174,6 +174,47 @@ class RobotExploration(Planning):
                 # calculate attention
                 P_z_A[i, j] = self._Planning__P_z_A_tau(P_z_d[i, j], P_z_p[i, j], P_z_i[i, j], P_z_c[i, j])
 
+        fig, axs = plt.subplots(1, 5)
+        fig_title = "Attention Map for t = " + str(t)
+        fig.suptitle(fig_title)
+        # fig.canvas.manager.window.geometry("2500x600+0+700")
+        mapShape = self.LTM["map_grid_probabilities"].shape
+        axs[0].imshow(self.LTM["map_grid_probabilities"], cmap='binary', origin="upper", extent=[0, mapShape[1] / self.params["lidarParams"]["meter2pixel"], 0, mapShape[0] / self.params["lidarParams"]["meter2pixel"]], aspect="auto")
+        cs0 = axs[0].contourf(x, y, P_z_d, alpha=0.75, vmin=0., vmax=1.)
+        axs[0].set_title('P_z_d')
+
+        axs[1].imshow(self.LTM["map_grid_probabilities"], cmap='binary', origin="upper", extent=[0, mapShape[1] / self.params["lidarParams"]["meter2pixel"], 0, mapShape[0] / self.params["lidarParams"]["meter2pixel"]], aspect="auto")
+        cs0 = axs[1].contourf(x, y, P_z_p, alpha=0.75, vmin=0., vmax=1.)
+        axs[1].set_title('P_z_p')
+
+        axs[2].imshow(self.LTM["map_grid_probabilities"], cmap='binary', origin="upper", extent=[0, mapShape[1] / self.params["lidarParams"]["meter2pixel"], 0, mapShape[0] / self.params["lidarParams"]["meter2pixel"]], aspect="auto")
+        cs0 = axs[2].contourf(x, y, P_z_i, alpha=0.75, vmin=0., vmax=1.)
+        axs[2].set_title('P_z_i')
+
+        axs[3].imshow(self.LTM["map_grid_probabilities"], cmap='binary', origin="upper", extent=[0, mapShape[1] / self.params["lidarParams"]["meter2pixel"], 0, mapShape[0] / self.params["lidarParams"]["meter2pixel"]], aspect="auto")
+        cs0 = axs[3].contourf(x, y, P_z_c, alpha=0.75, vmin=0., vmax=1.)
+        axs[3].set_title('P_z_c')
+
+        axs[4].imshow(self.LTM["map_grid_probabilities"], cmap='binary', origin="upper", extent=[0, mapShape[1] / self.params["lidarParams"]["meter2pixel"], 0, mapShape[0] / self.params["lidarParams"]["meter2pixel"]], aspect="auto")
+        cs0 = axs[4].contourf(x, y, P_z_A, alpha=0.75, vmin=0., vmax=1.)
+        axs[4].set_title('P_z_A')
+        fig.colorbar(cs0, use_gridspec=True)
+
+        # draw planned trajectory
+        for tau in range(len(z_s_tauPlus)):
+            if tau == 0:
+                z_s_tPlus = z_s_tauPlus[tau].detach().cpu().numpy()
+            else:
+                z_s_tPlus = np.vstack((z_s_tPlus, z_s_tauPlus[tau].detach().cpu().numpy()))
+        axs[0].plot(z_s_tPlus[:, 0], z_s_tPlus[:, 1], color="red")
+        axs[1].plot(z_s_tPlus[:, 0], z_s_tPlus[:, 1], color="red")
+        axs[2].plot(z_s_tPlus[:, 0], z_s_tPlus[:, 1], color="red")
+        axs[3].plot(z_s_tPlus[:, 0], z_s_tPlus[:, 1], color="red")
+        axs[4].plot(z_s_tPlus[:, 0], z_s_tPlus[:, 1], color="red")
+
+        fig.canvas.draw()
+        fig.canvas.flush_events()
+        plt.pause(.00001)
 
     # ################### Abstract methods of the class Planning ####################
     def q_z_a_tau(self, z_s_tauMinus1, k):
@@ -280,4 +321,4 @@ class RobotExploration(Planning):
 # 5) Add uncertainty to LTM variables that have not been updated for a long time? coresponding to loss of memory
 # 6) consider a Geometric distribution as prior (i.e. in the model) over number of options (K) - many times there only exist 1 option, but sometimes we have an unknown number of options (at least at compile time)
 # 7) consider a Geometric distribution as prior (i.e. in the model) over number of planning timesteps (T) - often it is sufficient to only plan a few time steps into the future (fast inference), e.g. when exploring, however, sometimes it would be advantageous to plan further into the future (high "T" mean slower inference), e.g. when planning to reach a specific state.
-# 8) rejection sampling for Hard constraints? e.g. look at
+# 8) rejection sampling f

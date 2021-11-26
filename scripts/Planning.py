@@ -55,19 +55,19 @@ class Planning(ABC):
                                            optim=optimizer,
                                            loss=loss)
 
-    def makePlan(self, t, T_delta, p_z_s_t, LTM, N_posterior_samples=1):
+    def makePlan(self, t, T_delta, p_z_s_t, LTM, N_posterior_samples=1, p_z_g=None):
         # T_delta: number of timesteps to predict into to future
-        
         self.T_delta = T_delta
         T = torch.tensor([t + self.T_delta])
-        
+
         # update the LTM store
         self.LTM = LTM
-        
+
+        self.p_z_g = p_z_g
+
         # add current state distribution to p_z_s_Minus and maybe delete TOO old state distributions that will not be used anymore!
         # self.p_z_s_Minus.append(p_z_s_t)
         self.p_z_s_Minus.append(poutine.trace(p_z_s_t).get_trace())
-        
         # self.p_z_s_Minus.append(poutine.trace(p_z_s_t).get_trace().nodes["z_s"]["fn"])
         self.params["N_old_states"] = len(self.p_z_s_Minus)
         if len(self.p_z_s_Minus) > self.params["N_old_states_to_consider"]:
@@ -113,8 +113,12 @@ class Planning(ABC):
         k = pyro.sample('k', dist.Categorical(assignment_probs), infer={"enumerate": "sequential"})
         # k is only used in the guide, but due to Pyro it also needs to be in the model
 
+        # P_impasse = torch.tensor([1.0]) - self.__P_z_p_tau(t, p_z_s_t_trace, _p_z_s_Minus[0:-2], decay=1.0)
+        P_impasse = torch.tensor([1.0]) - self.__P_z_p_tau(t, p_z_s_t_trace, _p_z_s_Minus[0], decay=1.0)
+        # P_impasse = torch.tensor([0.1])
+
         # sample planning steps recursively
-        z_a_tauPlus, z_s_tauPlus, P_z_d_end = self.__WM_planning_step_model(t + 1, T, k, z_s_t, _p_z_s_Minus, P_z_C_accum)
+        z_a_tauPlus, z_s_tauPlus, P_z_d_end = self.__WM_planning_step_model(t + 1, T, k, z_s_t, _p_z_s_Minus, P_z_C_accum, P_impasse)
         z_s_tauPlus.insert(0, z_s_t)
         return z_a_tauPlus, z_s_tauPlus, k
 
@@ -129,7 +133,7 @@ class Planning(ABC):
         z_s_tauPlus.insert(0, z_s_t)
         return z_a_tauPlus, z_s_tauPlus, k
 
-    def __WM_planning_step_model(self, tau, T, k, z_s_tauMinus1, p_z_s_Minus, P_z_C_accum):
+    def __WM_planning_step_model(self, tau, T, k, z_s_tauMinus1, p_z_s_Minus, P_z_C_accum, P_impasse):
         with scope(prefix=str(tau)):
             z_a_tauMinus1 = self.p_z_a_tau(z_s_tauMinus1)
 
@@ -137,10 +141,10 @@ class Planning(ABC):
             z_s_tau = p_z_s_tau_trace.nodes["_RETURN"]["value"]
 
         # calculate the (pseudo) probability of the state giving new information
-        P_z_i = self.__P_z_i_tau(z_s_tau)
+        # P_z_i = self.__P_z_i_tau(z_s_tau)
 
         # calculate the (pseudo) probability of the state yielding progress compared to previous states
-        P_z_p = self.__P_z_p_tau(tau, p_z_s_tau_trace, p_z_s_Minus)
+        # P_z_p = self.__P_z_p_tau(tau, p_z_s_tau_trace, p_z_s_Minus)
 
         # calculate the (pseudo) probability of the state violating constraints and accummulate that probability
         P_z_C_tau = self.__P_z_c_tau(z_s_tau, z_s_tauMinus1)
@@ -149,6 +153,22 @@ class Planning(ABC):
         if tau >= T:
             P_z_d = self.__P_z_d_tau(tau, p_z_s_tau_trace, self.p_z_g)
 
+            # print("P_z_d: " + str(P_z_d) + "    P_impasse: " + str(P_impasse))
+
+            # if P_z_d < P_impasse:  # if pseudo probability of being close to the goal is smaller than the probability of being in an impasse, then explore
+            if P_impasse > torch.tensor([0.90]):
+                P_z_d = torch.tensor([0.0])
+
+            if P_z_d < torch.tensor([0.10]):  # if pseudo probability of being close to the goal is small, then explore
+                # calculate the (pseudo) probability of the state giving new information
+                P_z_i = self.__P_z_i_tau(z_s_tau)
+
+                # calculate the (pseudo) probability of the state yielding progress compared to previous states
+                P_z_p = self.__P_z_p_tau(tau, p_z_s_tau_trace, p_z_s_Minus)
+            else:
+                P_z_i = torch.tensor([0.0])
+                P_z_p = torch.tensor([0.0])
+
             with scope(prefix=str(tau)):
                 pyro.sample("x_A", self.__p_z_A_tau(P_z_d, P_z_p, P_z_i, P_z_C_accum), obs=torch.tensor([1.], dtype=torch.float))
 
@@ -156,9 +176,21 @@ class Planning(ABC):
             z_s_tauPlus = [z_s_tau]
             return z_a_tauPlus, z_s_tauPlus, P_z_d
         else:
-            z_a_tauPlus, z_s_tauPlus, P_z_d_end = self.__WM_planning_step_model(tau + 1, T, k, z_s_tau, p_z_s_Minus, P_z_C_accum)
+            z_a_tauPlus, z_s_tauPlus, P_z_d_end = self.__WM_planning_step_model(tau + 1, T, k, z_s_tau, p_z_s_Minus, P_z_C_accum, P_impasse)
             # consider constraining this on if the end state of this trajectory actually ended up finding at the goal...
             # i.e. if it did, we e.g. might not care about progress (_p_z_P)
+
+            # if P_z_d_end < P_impasse:  # if pseudo probability of being close to the goal is smaller than the probability of being in an impasse, then explore
+            if P_z_d_end < torch.tensor([0.10]):  # if pseudo probability of being close to the goal is small, then explore
+                # calculate the (pseudo) probability of the state giving new information
+                P_z_i = self.__P_z_i_tau(z_s_tau)
+
+                # calculate the (pseudo) probability of the state yielding progress compared to previous states
+                P_z_p = self.__P_z_p_tau(tau, p_z_s_tau_trace, p_z_s_Minus)
+            else:
+                P_z_i = torch.tensor([0.0])
+                P_z_p = torch.tensor([0.0])
+
             with scope(prefix=str(tau)):
                 pyro.sample("x_A", self.__p_z_A_tau(P_z_d_end, P_z_p, P_z_i, P_z_C_accum), obs=torch.tensor([1.], dtype=torch.float))
 
@@ -203,7 +235,9 @@ class Planning(ABC):
     def __P_z_d_tau(self, tau, p_z_s_tau_trace, p_z_g):
         if p_z_g is not None:
             # calculate kl-divergence
-            KL_estimate = KL_point_estimate(tau, p_z_s_tau_trace, p_z_g)
+            with poutine.block():
+                p_z_g_trace = poutine.trace(p_z_g).get_trace()
+            KL_estimate = KL_point_estimate(tau, p_z_s_tau_trace, p_z_g_trace)
 
             # calculate "pseudo" probability
             P_z_d = torch.exp(-self.params["desirability_scale_factor"] * KL_estimate)
@@ -212,9 +246,10 @@ class Planning(ABC):
 
         return P_z_d
 
-    def __P_z_p_tau(self, tau, p_z_s_tau_trace, p_z_s_Minus):
+    def __P_z_p_tau(self, tau, p_z_s_tau_trace, p_z_s_Minus, decay=None):
         # make some optimization + add the different parameters to the param dict!
-        if hasattr(p_z_s_Minus, '__iter__'):
+        # if hasattr(p_z_s_Minus, '__iter__'):
+        if not isinstance(p_z_s_Minus, pyro.poutine.trace_struct.Trace):
             if self.params["N_old_states_to_consider"] > len(p_z_s_Minus):
                 N_old_states_to_consider = len(p_z_s_Minus)
             else:
@@ -224,7 +259,8 @@ class Planning(ABC):
                 idx = len(p_z_s_Minus) - i
                 KL_estimate = KL_point_estimate(tau, p_z_s_tau_trace, p_z_s_Minus[idx - 1])
 
-                decay = 1 - (1 - self.params["P_z_p_decay_max"]) * (N_old_states_to_consider - i) / N_old_states_to_consider
+                if True:  # decay is None:
+                    decay = 1 - (1 - self.params["P_z_p_decay_max"]) * (N_old_states_to_consider - i) / N_old_states_to_consider
                 # print("len(p_z_s_Minus): " + str(len(p_z_s_Minus)) + "  i: " + str(i) + "   idx: " + str(idx) + "    decay: " + str(decay))
                 P_z_p_list.append(decay * torch.exp(-self.params["progress_scale_factor"] * KL_estimate))
             P_z_p = torch.tensor([1.], dtype=torch.float) - probabilistic_OR_independent(P_z_p_list)
@@ -324,6 +360,15 @@ class Planning(ABC):
         #   .sample()
         #   .log_prob(z)
         raise NotImplementedError
+
+    # @abstractmethod
+    # def P_z_c_tau(self, z_s_tau, z_s_tauMinus1):
+    #     # returns list of constraint probabilities on the form
+    #     # 1 - e^(-k * c_i(z_s_tau, z_s_tauMinus1)) for maximization of c_i(...)
+    #     # or
+    #     # e^(-k * c_i(z_s_tau, z_s_tauMinus1)) for minimization of c_i(...)
+    #     # where c_i(...) are non-negative functions
+    #     raise NotImplementedError
 
     @abstractmethod
     def I_c_tau(self, z_s_tau, z_s_tauMinus1):

@@ -26,7 +26,7 @@ d_min = robotRadius + rospy.get_param("/cognition/mindistance", 0.2)  # we add a
 
 sorted_map = numpy.ones((int(100), int(100)))
 pose = numpy.ones((2, 1))
-T_delta = 1
+T_delta = 3
 
 def map_callback(map_data):
     map_w = map_data.info.width
