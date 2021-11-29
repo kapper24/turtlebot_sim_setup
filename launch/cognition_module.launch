@@ -1,6 +1,6 @@
 <launch>
   <node name="getPosition" pkg="turtlebot_sim_setup" type="getPosition.py" respawn="true" />
-  <node name="cognition" pkg="turtlebot_sim_setup" type="cognition.py" respawn="true" >
+  <node name="cognition" pkg="turtlebot_sim_setup" type="cognition.py" respawn="true" output="screen" >
     <param name="laserresolution" value="0.01744" />
     <param name="lasernoise" value="0.1" />
     <param name="mindistance" value="0.2" /> <!--this number is added to the radius of the robot default radius + 0.2-->

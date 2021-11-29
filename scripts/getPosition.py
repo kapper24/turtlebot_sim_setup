@@ -9,7 +9,7 @@ from std_msgs.msg import Float64MultiArray
 
 def listener():
     rospy.init_node("tf_listener", anonymous = True)
-    pub = rospy.Publisher("/obs0", Float64MultiArray, queue_size=10)
+    pub = rospy.Publisher("/obs0", Float64MultiArray, queue_size=1)
     listener = tf.TransformListener()
     posmsg = Float64MultiArray() 
     
