@@ -67,7 +67,14 @@ def listener():
     cognitive_exploration(client)
         
         
+def euler_to_quaternion(yaw, pitch, roll):
 
+        qx = numpy.sin(roll/2) * numpy.cos(pitch/2) * numpy.cos(yaw/2) - numpy.cos(roll/2) * numpy.sin(pitch/2) * numpy.sin(yaw/2)
+        qy = numpy.cos(roll/2) * numpy.sin(pitch/2) * numpy.cos(yaw/2) + numpy.sin(roll/2) * numpy.cos(pitch/2) * numpy.sin(yaw/2)
+        qz = numpy.cos(roll/2) * numpy.cos(pitch/2) * numpy.sin(yaw/2) - numpy.sin(roll/2) * numpy.sin(pitch/2) * numpy.cos(yaw/2)
+        qw = numpy.cos(roll/2) * numpy.cos(pitch/2) * numpy.cos(yaw/2) + numpy.sin(roll/2) * numpy.sin(pitch/2) * numpy.sin(yaw/2)
+
+        return [qx, qy, qz, qw]
 
 def cognitive_exploration(client):
     agent = RobotExploration(meter2pixel, lidar_range, lidar_FOV, lidar_resolution, lidar_sigma_hit, d_min)
@@ -120,16 +127,24 @@ def cognitive_exploration(client):
 
         #act[0] = z_s_tPlus_[0][0]
         #act[1] = z_s_tPlus_[0][1]
+        
         directionx = act[0] - position[0]
         directiony = act[1] - position[1]
+        direction_angle = torch.atan2(directiony, directionx)
+        quat = euler_to_quaternion(direction_angle,0,0)
+        
         goal = MoveBaseGoal()
         goal.target_pose.header.frame_id = "base_link"
         #goal.target_pose.header.frame_id = "map"
         goal.target_pose.header.stamp = rospy.Time.now()
         goal.target_pose.pose.position.x = act[0]
         goal.target_pose.pose.position.y = act[1]
-        #goal.target_pose.pose.orientation.z = 0
-        goal.target_pose.pose.orientation.w = 1 
+        
+        goal.target_pose.pose.orientation.x = quat[0][0]
+        goal.target_pose.pose.orientation.y = quat[1][0]
+        goal.target_pose.pose.orientation.z = quat[2][0]
+        goal.target_pose.pose.orientation.w = quat[3][0]
+        
         client.send_goal(goal)
         print("z_s_tPlus_" + str(z_s_tPlus_))
         print("z_a_tPlus" + str(z_a_tPlus))
