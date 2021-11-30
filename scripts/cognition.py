@@ -128,9 +128,9 @@ def cognitive_exploration(client):
         #act[0] = z_s_tPlus_[0][0]
         #act[1] = z_s_tPlus_[0][1]
         
-        directionx = act[0] - position[0]
-        directiony = act[1] - position[1]
-        direction_angle = torch.atan2(directiony, directionx)
+        directionx = act[0] 
+        directiony = act[1] 
+        direction_angle = numpy.arctan2(directiony, directionx)
         quat = euler_to_quaternion(direction_angle,0,0)
         
         goal = MoveBaseGoal()
@@ -140,10 +140,10 @@ def cognitive_exploration(client):
         goal.target_pose.pose.position.x = act[0]
         goal.target_pose.pose.position.y = act[1]
         
-        goal.target_pose.pose.orientation.x = quat[0][0]
-        goal.target_pose.pose.orientation.y = quat[1][0]
-        goal.target_pose.pose.orientation.z = quat[2][0]
-        goal.target_pose.pose.orientation.w = quat[3][0]
+        goal.target_pose.pose.orientation.x = quat[0]
+        goal.target_pose.pose.orientation.y = quat[1]
+        goal.target_pose.pose.orientation.z = quat[2]
+        goal.target_pose.pose.orientation.w = quat[3]
         
         client.send_goal(goal)
         print("z_s_tPlus_" + str(z_s_tPlus_))
