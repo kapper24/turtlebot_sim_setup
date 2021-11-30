@@ -24,7 +24,7 @@ lidar_range = int(rospy.get_param("/cognition/pixellaserrange", 70))  # laser ra
 lidar_FOV = rospy.get_param("/cognition/laserfow", 6.28)  # laser field of view in rad
 lidar_resolution = rospy.get_param("/cognition/laserresolution", 6.28/360)  # laser rotation resolution in rad
 lidar_sigma_hit = rospy.get_param("/cognition/lasernoise", 0.1)  # sigma of Gaussian distribution of laser noise
-d_min = robotRadius + rospy.get_param("/cognition/mindistance", 0)  # we add a small buffer of 5 cm - d_min = 0.25 m
+d_min = robotRadius + rospy.get_param("/cognition/mindistance", 1)  # we add a small buffer of 5 cm - d_min = 0.25 m
 p_z_g = None
 intcheck = 1
 sorted_map = numpy.zeros((int(100), int(100)))
@@ -36,18 +36,18 @@ def map_callback(map_data):
     map_h = map_data.info.height
     rawdata = map_data.data 
     sorted_map = numpy.empty((int(map_h), int(map_w)))
-    #for i in range(map_w): 
-    #    for j in range(map_h): 
-    #        if rawdata[i + j * map_w] == -1:
-    #            sorted_map[i][j] = float(0.5)
-    #       else:
-    #            sorted_map[i][j] = float(rawdata[i + j * map_w]/100)
     for i in range(map_w): 
         for j in range(map_h): 
             if rawdata[i + j * map_w] == -1:
                 sorted_map[map_h-1-j][i] = float(0.5)
             else:
                 sorted_map[map_h-1-j][i] = float(rawdata[i * map_w + j ]/100)
+    #for i in range(map_w): 
+    #    for j in range(map_h): 
+    #        if rawdata[i + j * map_w] == -1:
+    #            sorted_map[j][i] = float(0.5)
+    #        else:
+    #            sorted_map[j][i] = float(rawdata[i * map_w + j ]/100)
     
     
 
@@ -84,7 +84,7 @@ def cognitive_exploration(client):
         pos_data = rospy.wait_for_message("/obs0", Float64MultiArray)
         position_callback(pos_data)
         map_callback(map_data)
-        position = numpy.array([pose[0][0], pose[1][0]])  # we only use the position not the heading
+        position = numpy.array([pose[1][0], pose[0][0]])  # we only use the position not the heading
         print( "position" + str(position))
 
         map_grid_probabilities_np = sorted_map.copy()
@@ -102,7 +102,7 @@ def cognitive_exploration(client):
             # make new plan
             # with contextlib.redirect_stdout(open(os.devnull, 'w')):
         tic = time.time()
-        z_a_tPlus_samples, z_s_tPlus_samples = agent.makePlan(t, T_delta, p_z_s_t, map_grid_probabilities, return_mode="mean", p_z_g=p_z_g)
+        z_a_tPlus_samples, z_s_tPlus_samples = agent.makePlan(t, T_delta, p_z_s_t, map_grid_probabilities, return_mode="raw_samples", p_z_g=p_z_g)
 
         z_a_tPlus, z_s_tPlus_ = agent.calculate_mean_state_action_means(z_a_tPlus_samples, z_s_tPlus_samples)
         z_s_tPlus_ = z_s_tPlus_samples[0]
@@ -110,21 +110,26 @@ def cognitive_exploration(client):
         time_pr_iteration.append(toc - tic)
 
             #convert plan to the format used by the simulator
-        act[0] = position[0] + z_a_tPlus[0][0]
-        act[1] = position[1] + z_a_tPlus[0][1]
+        act[0] = z_a_tPlus[1][0]
+        act[1] = z_a_tPlus[1][1]
+        #act[0] = z_s_tPlus_[0][0]
+        #act[1] = z_s_tPlus_[0][1]
+        directionx = act[0] - position[0]
+        directiony = act[1] - position[1]
         goal = MoveBaseGoal()
-        goal.target_pose.header.frame_id = "map"
+        goal.target_pose.header.frame_id = "base_link"
+        #goal.target_pose.header.frame_id = "map"
         goal.target_pose.header.stamp = rospy.Time.now()
         goal.target_pose.pose.position.x = act[0]
         goal.target_pose.pose.position.y = act[1]
-        goal.target_pose.pose.orientation.w = 1.0
+        #goal.target_pose.pose.orientation.z = 0
+        goal.target_pose.pose.orientation.w = 1 
         client.send_goal(goal)
         print("z_s_tPlus_" + str(z_s_tPlus_))
         print("z_a_tPlus" + str(z_a_tPlus))
         print("goal" + str(goal.target_pose.pose.position.x) + " " + str(goal.target_pose.pose.position.y))
-        if t > 0:
-            client.wait_for_result()
-        t += 1
+        
+        client.wait_for_result()
 
 if __name__ == '__main__':
     listener()
