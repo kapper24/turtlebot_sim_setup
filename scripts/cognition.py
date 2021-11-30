@@ -24,7 +24,7 @@ lidar_range = int(rospy.get_param("/cognition/pixellaserrange", 70))  # laser ra
 lidar_FOV = rospy.get_param("/cognition/laserfow", 6.28)  # laser field of view in rad
 lidar_resolution = rospy.get_param("/cognition/laserresolution", 6.28/360)  # laser rotation resolution in rad
 lidar_sigma_hit = rospy.get_param("/cognition/lasernoise", 0.1)  # sigma of Gaussian distribution of laser noise
-d_min = robotRadius + rospy.get_param("/cognition/mindistance", 1)  # we add a small buffer of 5 cm - d_min = 0.25 m
+d_min = robotRadius + rospy.get_param("/cognition/mindistance", 0.50)  # we add a small buffer of 5 cm - d_min = 0.25 m
 p_z_g = None
 intcheck = 1
 sorted_map = numpy.zeros((int(100), int(100)))

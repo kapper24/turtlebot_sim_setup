@@ -174,48 +174,8 @@ class RobotExploration(Planning):
                 # calculate attention
                 P_z_A[i, j] = self._Planning__P_z_A_tau(P_z_d[i, j], P_z_p[i, j], P_z_i[i, j], P_z_c[i, j])
 
-        fig, axs = plt.subplots(1, 5)
-        fig_title = "Attention Map for t = " + str(t)
-        fig.suptitle(fig_title)
-        # fig.canvas.manager.window.geometry("2500x600+0+700")
-        mapShape = self.LTM["map_grid_probabilities"].shape
-        axs[0].imshow(self.LTM["map_grid_probabilities"], cmap='binary', origin="upper", extent=[0, mapShape[1] / self.params["lidarParams"]["meter2pixel"], 0, mapShape[0] / self.params["lidarParams"]["meter2pixel"]], aspect="auto")
-        cs0 = axs[0].contourf(x, y, P_z_d, alpha=0.75, vmin=0., vmax=1.)
-        axs[0].set_title('P_z_d')
-
-        axs[1].imshow(self.LTM["map_grid_probabilities"], cmap='binary', origin="upper", extent=[0, mapShape[1] / self.params["lidarParams"]["meter2pixel"], 0, mapShape[0] / self.params["lidarParams"]["meter2pixel"]], aspect="auto")
-        cs0 = axs[1].contourf(x, y, P_z_p, alpha=0.75, vmin=0., vmax=1.)
-        axs[1].set_title('P_z_p')
-
-        axs[2].imshow(self.LTM["map_grid_probabilities"], cmap='binary', origin="upper", extent=[0, mapShape[1] / self.params["lidarParams"]["meter2pixel"], 0, mapShape[0] / self.params["lidarParams"]["meter2pixel"]], aspect="auto")
-        cs0 = axs[2].contourf(x, y, P_z_i, alpha=0.75, vmin=0., vmax=1.)
-        axs[2].set_title('P_z_i')
-
-        axs[3].imshow(self.LTM["map_grid_probabilities"], cmap='binary', origin="upper", extent=[0, mapShape[1] / self.params["lidarParams"]["meter2pixel"], 0, mapShape[0] / self.params["lidarParams"]["meter2pixel"]], aspect="auto")
-        cs0 = axs[3].contourf(x, y, P_z_c, alpha=0.75, vmin=0., vmax=1.)
-        axs[3].set_title('P_z_c')
-
-        axs[4].imshow(self.LTM["map_grid_probabilities"], cmap='binary', origin="upper", extent=[0, mapShape[1] / self.params["lidarParams"]["meter2pixel"], 0, mapShape[0] / self.params["lidarParams"]["meter2pixel"]], aspect="auto")
-        cs0 = axs[4].contourf(x, y, P_z_A, alpha=0.75, vmin=0., vmax=1.)
-        axs[4].set_title('P_z_A')
-        fig.colorbar(cs0, use_gridspec=True)
-
-        # draw planned trajectory
-        for tau in range(len(z_s_tauPlus)):
-            if tau == 0:
-                z_s_tPlus = z_s_tauPlus[tau].detach().cpu().numpy()
-            else:
-                z_s_tPlus = np.vstack((z_s_tPlus, z_s_tauPlus[tau].detach().cpu().numpy()))
-        axs[0].plot(z_s_tPlus[:, 0], z_s_tPlus[:, 1], color="red")
-        axs[1].plot(z_s_tPlus[:, 0], z_s_tPlus[:, 1], color="red")
-        axs[2].plot(z_s_tPlus[:, 0], z_s_tPlus[:, 1], color="red")
-        axs[3].plot(z_s_tPlus[:, 0], z_s_tPlus[:, 1], color="red")
-        axs[4].plot(z_s_tPlus[:, 0], z_s_tPlus[:, 1], color="red")
-
-        fig.canvas.draw()
-        fig.canvas.flush_events()
-        plt.pause(.00001)
-
+    
+    
     # ################### Abstract methods of the class Planning ####################
     def q_z_a_tau(self, z_s_tauMinus1, k):
         alpha_init = torch.tensor([[10000., 10000.], [10000., 10000.]], dtype=torch.float)
