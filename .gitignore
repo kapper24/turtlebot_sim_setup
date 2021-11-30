@@ -1,2 +1,9 @@
 .vscode/c_cpp_properties.json
 .vscode/settings.json
+scripts/__pycache__/barrierfunctions.cpython-36.pyc
+scripts/__pycache__/constraints.cpython-36.pyc
+scripts/__pycache__/lidarmodel.cpython-36.pyc
+scripts/__pycache__/misc.cpython-36.pyc
+scripts/__pycache__/Planning.cpython-36.pyc
+scripts/__pycache__/RobotExploration.cpython-36.pyc
+scripts/__pycache__/Trunc.cpython-36.pyc
