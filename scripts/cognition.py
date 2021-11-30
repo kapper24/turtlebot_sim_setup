@@ -110,8 +110,14 @@ def cognitive_exploration(client):
         time_pr_iteration.append(toc - tic)
 
             #convert plan to the format used by the simulator
-        act[0] = z_a_tPlus[1][0]
-        act[1] = z_a_tPlus[1][1]
+        
+        if torch.abs(z_a_tPlus[0][0]) < 0.1 or torch.abs(z_a_tPlus[0][1]) < 0.1:
+            act[0] = z_a_tPlus[1][0]
+            act[1] = z_a_tPlus[1][1]
+        else:
+            act[0] = z_a_tPlus[0][0]
+            act[1] = z_a_tPlus[0][1]
+
         #act[0] = z_s_tPlus_[0][0]
         #act[1] = z_s_tPlus_[0][1]
         directionx = act[0] - position[0]
@@ -128,8 +134,10 @@ def cognitive_exploration(client):
         print("z_s_tPlus_" + str(z_s_tPlus_))
         print("z_a_tPlus" + str(z_a_tPlus))
         print("goal" + str(goal.target_pose.pose.position.x) + " " + str(goal.target_pose.pose.position.y))
+
+        rospy.sleep(10)
+        client.cancel_goal()
         
-        client.wait_for_result()
 
 if __name__ == '__main__':
     listener()
