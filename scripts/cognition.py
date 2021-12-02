@@ -102,7 +102,7 @@ def cognitive_exploration(client):
         print(map_grid_probabilities)
         torch.save(map_grid_probabilities, path/'file')
         map_grid_probabilities = torch.flip(map_grid_probabilities, [0])
-        z_s_t = torch.tensor([position[1], position[0]], dtype=torch.float)
+        z_s_t = torch.tensor([position[0], position[1]], dtype=torch.float)
 
         def p_z_s_t():
             z_s_t_ = z_s_t.detach()
@@ -131,7 +131,7 @@ def cognitive_exploration(client):
             act[1] = 0
         else:
             act[0] = z_s_t[0] + z_a_tPlus[0][0]
-            act[1] = z_s_t[1] + z_a_tPlus[0][1]
+            act[1] = -z_s_t[1] + z_a_tPlus[0][1]
 
        
         
