@@ -7,7 +7,6 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 from lidarmodel import p_z_Lidar_prior, p_z_Lidar_posterior, p_z_Map_prior, lidar_generate_obs_labels
-from constraints import P_z_C1, P_z_C2
 from barrierfunctions import sigmoidSS
 
 

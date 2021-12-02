@@ -24,7 +24,7 @@ lidar_range = int(rospy.get_param("/cognition/pixellaserrange", 70))  # laser ra
 lidar_FOV = rospy.get_param("/cognition/laserfow", 6.28)  # laser field of view in rad
 lidar_resolution = rospy.get_param("/cognition/laserresolution", 6.28/360)  # laser rotation resolution in rad
 lidar_sigma_hit = rospy.get_param("/cognition/lasernoise", 0.1)  # sigma of Gaussian distribution of laser noise
-d_min = robotRadius + rospy.get_param("/cognition/mindistance", 0.50)  # we add a small buffer of 5 cm - d_min = 0.25 m
+d_min = robotRadius + rospy.get_param("/cognition/mindistance", 0.05)  # we add a small buffer of 5 cm - d_min = 0.25 m
 p_z_g = None
 intcheck = 1
 sorted_map = numpy.zeros((int(100), int(100)))
@@ -40,6 +40,8 @@ def map_callback(map_data):
         for j in range(map_h): 
             if rawdata[i + j * map_w] == -1:
                 sorted_map[map_h-1-j][i] = float(0.5)
+            if rawdata[i + j * map_w] > 70:
+                sorted_map[map_h-1-j][i] = float(1)
             else:
                 sorted_map[map_h-1-j][i] = float(rawdata[i * map_w + j ]/100)
     #for i in range(map_w): 
@@ -109,27 +111,29 @@ def cognitive_exploration(client):
             # make new plan
             # with contextlib.redirect_stdout(open(os.devnull, 'w')):
         tic = time.time()
-        z_a_tPlus_samples, z_s_tPlus_samples = agent.makePlan(t, T_delta, p_z_s_t, map_grid_probabilities, return_mode="raw_samples", p_z_g=p_z_g)
-
-        z_a_tPlus, z_s_tPlus_ = agent.calculate_mean_state_action_means(z_a_tPlus_samples, z_s_tPlus_samples)
-        z_s_tPlus_ = z_s_tPlus_samples[0]
+        #z_a_tPlus_samples, z_s_tPlus_samples = agent.makePlan(t, T_delta, p_z_s_t, map_grid_probabilities, return_mode="raw_samples", p_z_g=p_z_g)
+        z_a_tPlus, z_s_tPlus_ = agent.makePlan(t, T_delta, p_z_s_t, map_grid_probabilities, return_mode="mean", p_z_g=p_z_g)     
+        #z_a_tPlus, z_s_tPlus_ = agent.calculate_mean_state_action_means(z_a_tPlus_samples, z_s_tPlus_samples)
+        
+        #act[0] = z_s_tPlus_[0][0]
+        #act[1] = z_s_tPlus_[0][1]
+        #z_s_tPlus_ = z_s_tPlus_samples[0]
         toc = time.time()
         time_pr_iteration.append(toc - tic)
 
             #convert plan to the format used by the simulator
         
-        if torch.abs(z_a_tPlus[0][0]) < 0.1 or torch.abs(z_a_tPlus[0][1]) < 0.1:
-            act[0] = z_a_tPlus[1][0]
-            act[1] = z_a_tPlus[1][1]
+        if torch.abs(z_a_tPlus[0][0]) < 0.001 or torch.abs(z_a_tPlus[0][1]) < 0.001:
+            act[0] = 0
+            act[1] = 0
         else:
-            act[0] = z_a_tPlus[0][0]
-            act[1] = z_a_tPlus[0][1]
+            act[0] = z_a_tPlus[0][1]
+            act[1] = z_a_tPlus[0][0]
 
-        #act[0] = z_s_tPlus_[0][0]
-        #act[1] = z_s_tPlus_[0][1]
+       
         
-        directionx = act[0] 
-        directiony = act[1] 
+        directionx = z_a_tPlus[0][1] 
+        directiony = z_a_tPlus[0][0]
         direction_angle = numpy.arctan2(directiony, directionx)
         quat = euler_to_quaternion(direction_angle,0,0)
         
@@ -150,8 +154,16 @@ def cognitive_exploration(client):
         print("z_a_tPlus" + str(z_a_tPlus))
         print("goal" + str(goal.target_pose.pose.position.x) + " " + str(goal.target_pose.pose.position.y))
 
-        rospy.sleep(10)
-        client.cancel_goal()
+        
+        i = 0
+        while i < 10:
+            rospy.sleep(1)
+            a = client.get_state()
+            if a == 3:
+                i = 10
+            if i == 9:
+                client.cancel_goal()
+            i = i+1
         
 
 if __name__ == '__main__':
