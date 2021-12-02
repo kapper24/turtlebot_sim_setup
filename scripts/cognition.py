@@ -127,13 +127,13 @@ def cognitive_exploration(client):
             act[0] = 0
             act[1] = 0
         else:
-            act[0] = z_a_tPlus[0][1]
-            act[1] = z_a_tPlus[0][0]
+            act[0] = z_a_tPlus[0][0]
+            act[1] = z_a_tPlus[0][1]
 
        
         
-        directionx = z_a_tPlus[0][1] 
-        directiony = z_a_tPlus[0][0]
+        directionx = z_a_tPlus[0][0] 
+        directiony = z_a_tPlus[0][1]
         direction_angle = numpy.arctan2(directiony, directionx)
         quat = euler_to_quaternion(direction_angle,0,0)
         
