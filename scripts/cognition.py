@@ -14,10 +14,11 @@ from std_msgs.msg import Int8
 from geometry_msgs.msg import PoseStamped
 import actionlib
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
+from pathlib import Path
 
 import time
 from RobotExploration import RobotExploration
-
+path = Path('/home/kasper/catkin_ws/src/turtlebot_sim_setup/scripts')
 meter2pixel = int(rospy.get_param("/cognition/pixelsprmeter", 20))  # X pixel = 1 meter
 robotRadius = rospy.get_param("/cognition/robotradius", 0.18 / meter2pixel)  # robot radius in meter
 lidar_range = int(rospy.get_param("/cognition/pixellaserrange", 70))  # laser range in pixel
@@ -39,17 +40,17 @@ def map_callback(map_data):
     for i in range(map_w): 
         for j in range(map_h): 
             if rawdata[i + j * map_w] == -1:
-                sorted_map[map_h-1-j][i] = float(0.5)
+                sorted_map[i][map_h-1-j] = float(0.5)
             if rawdata[i + j * map_w] > 70:
-                sorted_map[map_h-1-j][i] = float(1)
+                sorted_map[i][map_h-1-j] = float(1)
             else:
-                sorted_map[map_h-1-j][i] = float(rawdata[i * map_w + j ]/100)
+                sorted_map[i][map_h-1-j] = float(rawdata[i * map_w + j ]/100)
     #for i in range(map_w): 
     #    for j in range(map_h): 
     #        if rawdata[i + j * map_w] == -1:
-    #            sorted_map[j][i] = float(0.5)
+    #            sorted_map[i][j] = float(0.5)
     #        else:
-    #            sorted_map[j][i] = float(rawdata[i * map_w + j ]/100)
+    #            sorted_map[i][j] = float(rawdata[i * map_w + j ]/100)
     
     
 
@@ -98,8 +99,10 @@ def cognitive_exploration(client):
 
         map_grid_probabilities_np = sorted_map.copy()
         map_grid_probabilities = torch.from_numpy(map_grid_probabilities_np)
+        print(map_grid_probabilities)
+        torch.save(map_grid_probabilities, path/'file')
         map_grid_probabilities = torch.flip(map_grid_probabilities, [0])
-        z_s_t = torch.tensor([position[0], position[1]], dtype=torch.float)
+        z_s_t = torch.tensor([position[1], position[0]], dtype=torch.float)
 
         def p_z_s_t():
             z_s_t_ = z_s_t.detach()
@@ -127,8 +130,8 @@ def cognitive_exploration(client):
             act[0] = 0
             act[1] = 0
         else:
-            act[0] = z_a_tPlus[0][0]
-            act[1] = z_a_tPlus[0][1]
+            act[0] = z_s_t[0] + z_a_tPlus[0][0]
+            act[1] = z_s_t[1] + z_a_tPlus[0][1]
 
        
         
@@ -138,7 +141,7 @@ def cognitive_exploration(client):
         quat = euler_to_quaternion(direction_angle,0,0)
         
         goal = MoveBaseGoal()
-        goal.target_pose.header.frame_id = "base_link"
+        goal.target_pose.header.frame_id = "map"
         #goal.target_pose.header.frame_id = "map"
         goal.target_pose.header.stamp = rospy.Time.now()
         goal.target_pose.pose.position.x = act[0]
