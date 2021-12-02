@@ -1,6 +1,5 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-from os import posix_fadvise
 import rospy
 from rospy.topics import Publisher
 import tf
