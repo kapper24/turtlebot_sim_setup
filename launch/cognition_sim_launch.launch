@@ -1,6 +1,6 @@
 <launch>
   <arg name="model" default="$(env TURTLEBOT3_MODEL)" doc="model type [burger, waffle, waffle_pi]"/>
-  <include file="$(find turtlebot3_gazebo)/launch/turtlebot3_house.launch"/>
+  <include file="$(find turtlebot_sim_setup)/launch/turtlebot_test_y.launch"/>
   <include file="$(find turtlebot3_slam)/launch/turtlebot3_slam.launch"/>
   <include file="$(find turtlebot3_navigation)/launch/move_base.launch">
     <rosparam command="load" file="$(find turtlebot_sim_setup)/config/params_planner.yaml"/>
