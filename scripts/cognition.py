@@ -37,20 +37,22 @@ def map_callback(map_data):
     map_h = map_data.info.height
     rawdata = map_data.data 
     sorted_map = numpy.empty((int(map_h), int(map_w)))
-    for i in range(map_w): 
-        for j in range(map_h): 
-            if rawdata[i + j * map_w] == -1:
-                sorted_map[i][map_h-1-j] = float(0.5)
-            if rawdata[i + j * map_w] > 70:
-                sorted_map[i][map_h-1-j] = float(1)
-            else:
-                sorted_map[i][map_h-1-j] = float(rawdata[i * map_w + j ]/100)
     #for i in range(map_w): 
     #    for j in range(map_h): 
     #        if rawdata[i + j * map_w] == -1:
-    #            sorted_map[i][j] = float(0.5)
+    #            sorted_map[i][map_h-1-j] = float(0.5)
+    #        if rawdata[i + j * map_w] > 70:
+    #            sorted_map[i][map_h-1-j] = float(1)
     #        else:
-    #            sorted_map[i][j] = float(rawdata[i * map_w + j ]/100)
+    #            sorted_map[i][map_h-1-j] = float(rawdata[i * map_w + j ]/100)
+    for i in range(map_w): 
+        for j in range(map_h): 
+            if rawdata[i + j * map_w] == -1:
+                sorted_map[j][i] = float(0.5)
+            if rawdata[i + j * map_w] > 70:
+                sorted_map[j][i] = float(1)
+            else:
+                sorted_map[j][i] = float(rawdata[i * map_w + j ]/100)
     
     
 
@@ -95,7 +97,7 @@ def cognitive_exploration(client):
         position_callback(pos_data)
         map_callback(map_data)
         position = numpy.array([pose[1][0], pose[0][0]])  # we only use the position not the heading
-        print( "position" + str(position))
+        print( "positionx" + str(position[0]) + "positiony" + str(position[1]))
 
         map_grid_probabilities_np = sorted_map.copy()
         map_grid_probabilities = torch.from_numpy(map_grid_probabilities_np)
@@ -125,13 +127,14 @@ def cognitive_exploration(client):
         time_pr_iteration.append(toc - tic)
 
             #convert plan to the format used by the simulator
-        
+   
         if torch.abs(z_a_tPlus[0][0]) < 0.001 or torch.abs(z_a_tPlus[0][1]) < 0.001:
-            act[0] = 0
-            act[1] = 0
+            act[0] = z_s_t[0]
+            act[1] = z_s_t[1]
+       
         else:
             act[0] = z_s_t[0] + z_a_tPlus[0][0]
-            act[1] = -z_s_t[1] + z_a_tPlus[0][1]
+            act[1] = z_s_t[1] + z_a_tPlus[0][1]
 
        
         
