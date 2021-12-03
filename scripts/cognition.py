@@ -15,10 +15,12 @@ from geometry_msgs.msg import PoseStamped
 import actionlib
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from pathlib import Path
-
+#for get pos
+import tf
+from tf import listener
 import time
 from RobotExploration import RobotExploration
-path = Path('/home/kasper/catkin_ws/src/turtlebot_sim_setup/scripts')
+path = Path('/home/melvin/turtle_ws/src/turtlebot_sim_setup/scripts')
 meter2pixel = int(rospy.get_param("/cognition/pixelsprmeter", 20))  # X pixel = 1 meter
 robotRadius = rospy.get_param("/cognition/robotradius", 0.18 / meter2pixel)  # robot radius in meter
 lidar_range = int(rospy.get_param("/cognition/pixellaserrange", 70))  # laser range in pixel
@@ -32,11 +34,13 @@ sorted_map = numpy.zeros((int(100), int(100)))
 pose = numpy.zeros((2, 1)) 
 T_delta = 2
 
+
 def map_callback(map_data):
     map_w = map_data.info.width
     map_h = map_data.info.height
     rawdata = map_data.data 
     sorted_map = numpy.empty((int(map_h), int(map_w)))
+    
     #for i in range(map_w): 
     #    for j in range(map_h): 
     #        if rawdata[i + j * map_w] == -1:
@@ -45,6 +49,7 @@ def map_callback(map_data):
     #            sorted_map[i][map_h-1-j] = float(1)
     #        else:
     #            sorted_map[i][map_h-1-j] = float(rawdata[i * map_w + j ]/100)
+    #numpy.savetxt(path/'map_1',sorted_map,delimiter=',')
     for i in range(map_w): 
         for j in range(map_h): 
             if rawdata[i + j * map_w] == -1:
@@ -53,15 +58,15 @@ def map_callback(map_data):
                 sorted_map[j][i] = float(1)
             else:
                 sorted_map[j][i] = float(rawdata[i * map_w + j ]/100)
-    
-    
-
-def position_callback(pos_data):
-    pose[0] = float(pos_data.data[0]) 
-    pose[1] = float(pos_data.data[1])
-    
- 
-
+    #numpy.savetxt(path/'map_2',sorted_map,delimiter=',')              
+def position_callback():
+    try:
+        (trans,rot) = tflistener.lookupTransform('/map', '/base_link', rospy.Time(0))
+        pose[0] = float(trans[0]) 
+        pose[1] = float(trans[1])
+    except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+        position_callback()
+        
 
 def listener():
     rospy.init_node('cognition', anonymous=True)
@@ -69,6 +74,9 @@ def listener():
     #rospy.Subscriber("/obs0", Float64MultiArray, position_callback)
     client = actionlib.SimpleActionClient('move_base',MoveBaseAction)
     client.wait_for_server()
+    #for get pos
+    global tflistener
+    tflistener = tf.TransformListener()
     cognitive_exploration(client)
         
         
@@ -93,17 +101,18 @@ def cognitive_exploration(client):
 
     while not rospy.is_shutdown():
         map_data = rospy.wait_for_message("/map", OccupancyGrid)
-        pos_data = rospy.wait_for_message("/obs0", Float64MultiArray)
-        position_callback(pos_data)
+        #pos_data = rospy.wait_for_message("/obs0", Float64MultiArray) for get position
+        position_callback()
         map_callback(map_data)
-        position = numpy.array([pose[1][0], pose[0][0]])  # we only use the position not the heading
+        position = numpy.array([pose[0][0], pose[1][0]])  # we only use the position not the heading
         print( "positionx" + str(position[0]) + "positiony" + str(position[1]))
 
         map_grid_probabilities_np = sorted_map.copy()
         map_grid_probabilities = torch.from_numpy(map_grid_probabilities_np)
-        print(map_grid_probabilities)
-        torch.save(map_grid_probabilities, path/'file')
-        map_grid_probabilities = torch.flip(map_grid_probabilities, [0])
+       # print(map_grid_probabilities)
+      
+       
+        #map_grid_probabilities = torch.flip(map_grid_probabilities, [0])
         z_s_t = torch.tensor([position[0], position[1]], dtype=torch.float)
 
         def p_z_s_t():
@@ -156,8 +165,8 @@ def cognitive_exploration(client):
         goal.target_pose.pose.orientation.w = quat[3]
         
         client.send_goal(goal)
-        print("z_s_tPlus_" + str(z_s_tPlus_))
-        print("z_a_tPlus" + str(z_a_tPlus))
+        #print("z_s_tPlus_" + str(z_s_tPlus_))
+        #print("z_a_tPlus" + str(z_a_tPlus))
         print("goal" + str(goal.target_pose.pose.position.x) + " " + str(goal.target_pose.pose.position.y))
 
         
