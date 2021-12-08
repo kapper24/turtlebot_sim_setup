@@ -44,21 +44,24 @@ def map_callback(map_data):
     #for i in range(map_w): 
     #    for j in range(map_h): 
     #        if rawdata[i + j * map_w] == -1:
-    #            sorted_map[i][map_h-1-j] = float(0.5)
-    #        if rawdata[i + j * map_w] > 70:
-    #            sorted_map[i][map_h-1-j] = float(1)
+    #            sorted_map[i][map_h-1-j] = 0.5
+    #        if rawdata[i + j * map_w] > 65:
+    #            sorted_map[i][map_h-1-j] = 1.0
     #        else:
-    #            sorted_map[i][map_h-1-j] = float(rawdata[i * map_w + j ]/100)
+    #            sorted_map[i][map_h-1-j] = rawdata[i * map_w + j ]/100)
     #numpy.savetxt(path/'map_1',sorted_map,delimiter=',')
     for i in range(map_w): 
         for j in range(map_h): 
             if rawdata[i + j * map_w] == -1:
-                sorted_map[j][i] = float(0.5)
-            if rawdata[i + j * map_w] > 70:
-                sorted_map[j][i] = float(1)
+                sorted_map[j][i] = 0.5
+            elif rawdata[i + j * map_w] > 65:
+                sorted_map[j][i] = 1.0
             else:
-                sorted_map[j][i] = float(rawdata[i * map_w + j ]/100)
-    #numpy.savetxt(path/'map_2',sorted_map,delimiter=',')              
+                sorted_map[j][i] = rawdata[i + map_w * j ]/100.0
+               # print(rawdata[i + map_w * j ])
+    #numpy.savetxt(path/'map_2',sorted_map,delimiter=',')       
+  #  print("saved_map") 
+          
 def position_callback():
     try:
         (trans,rot) = tflistener.lookupTransform('/map', '/base_link', rospy.Time(0))
@@ -126,7 +129,7 @@ def cognitive_exploration(client):
             # with contextlib.redirect_stdout(open(os.devnull, 'w')):
         tic = time.time()
         #z_a_tPlus_samples, z_s_tPlus_samples = agent.makePlan(t, T_delta, p_z_s_t, map_grid_probabilities, return_mode="raw_samples", p_z_g=p_z_g)
-        z_a_tPlus, z_s_tPlus_ = agent.makePlan(t, T_delta, p_z_s_t, map_grid_probabilities, return_mode="mean", p_z_g=p_z_g)     
+        z_a_tPlus, z_s_tPlus_ = agent.makePlan(t, T_delta, p_z_s_t, map_grid_probabilities, return_mode="random", p_z_g=p_z_g)     
         #z_a_tPlus, z_s_tPlus_ = agent.calculate_mean_state_action_means(z_a_tPlus_samples, z_s_tPlus_samples)
         
         #act[0] = z_s_tPlus_[0][0]
