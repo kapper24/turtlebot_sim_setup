@@ -108,13 +108,17 @@ def listener():
     rospy.init_node('cognition', anonymous=True)
     #rospy.Subscriber("/map", OccupancyGrid, map_callback)
     #rospy.Subscriber("/obs0", Float64MultiArray, position_callback)
+    
     client = actionlib.SimpleActionClient('move_base',MoveBaseAction)
+    print("1")
     client.wait_for_server()
+    print("1")
     #for get pos
     global tflistener
     #global marker_pub
     #marker_pub = rospy.Publisher("/visualization_markerarray", MarkerArray, queue_size = 2)
     tflistener = tf.TransformListener()
+    print("1")
     cognitive_exploration(client)
         
         
@@ -140,10 +144,14 @@ def cognitive_exploration(client):
     while not rospy.is_shutdown():
         map_data = rospy.wait_for_message("/map1", OccupancyGrid)
         #pos_data = rospy.wait_for_message("/obs0", Float64MultiArray) for get position
+        print("1")
         position_callback()
+
+        print("1")
         map_callback(map_data)
+        print("1")
         position = numpy.array([pose[0][0], pose[1][0]])  # we only use the position not the heading
-        #print( "positionx" + str(position[0]) + "positiony" + str(position[1]))
+        print( "positionx" + str(position[0]) + "positiony" + str(position[1]))
 
         map_grid_probabilities_np = sorted_map.copy()
         map_grid_probabilities = torch.from_numpy(map_grid_probabilities_np)
@@ -189,7 +197,7 @@ def cognitive_exploration(client):
         quat = euler_to_quaternion(direction_angle,0,0)
         
         goal = MoveBaseGoal()
-        goal.target_pose.header.frame_id = "map"
+        goal.target_pose.header.frame_id = "map1"
         #goal.target_pose.header.frame_id = "map"
         goal.target_pose.header.stamp = rospy.Time.now()
         goal.target_pose.pose.position.x = act[0]
