@@ -28,13 +28,13 @@ robotRadius = rospy.get_param("/cognition/robotradius", 0.18 / meter2pixel)  # r
 lidar_range = int(rospy.get_param("/cognition/pixellaserrange", 60))  # laser range in pixel
 lidar_FOV = rospy.get_param("/cognition/laserfow", 6.28)  # laser field of view in rad
 lidar_resolution = rospy.get_param("/cognition/laserresolution", 6.28/360)  # laser rotation resolution in rad
-lidar_sigma_hit = rospy.get_param("/cognition/lasernoise", 0.1)  # sigma of Gaussian distribution of laser noise
+lidar_sigma_hit = rospy.get_param("/cognition/lasernoise", 0)  # sigma of Gaussian distribution of laser noise
 d_min = robotRadius + rospy.get_param("/cognition/mindistance", 0.5)  # we add a small buffer of 5 cm - d_min = 0.25 m
 p_z_g = None
 intcheck = 1
 sorted_map = numpy.zeros((int(100), int(100)))
 pose = numpy.zeros((2, 1)) 
-T_delta = 10
+T_delta = 3
 
 #def markerpublisher(data, pos):
 #    global marker_ests
