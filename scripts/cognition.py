@@ -13,6 +13,8 @@ from std_msgs.msg import Float64MultiArray
 from std_msgs.msg import Int8
 from geometry_msgs.msg import PoseStamped
 import actionlib
+from visualization_msgs.msg import Marker
+from visualization_msgs.msg import MarkerArray
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from pathlib import Path
 #for get pos
@@ -23,21 +25,51 @@ from RobotExploration import RobotExploration
 path = Path('/home/melvin/turtle_ws/src/turtlebot_sim_setup/scripts')
 meter2pixel = int(rospy.get_param("/cognition/pixelsprmeter", 20))  # X pixel = 1 meter
 robotRadius = rospy.get_param("/cognition/robotradius", 0.18 / meter2pixel)  # robot radius in meter
-lidar_range = int(rospy.get_param("/cognition/pixellaserrange", 70))  # laser range in pixel
+lidar_range = int(rospy.get_param("/cognition/pixellaserrange", 60))  # laser range in pixel
 lidar_FOV = rospy.get_param("/cognition/laserfow", 6.28)  # laser field of view in rad
 lidar_resolution = rospy.get_param("/cognition/laserresolution", 6.28/360)  # laser rotation resolution in rad
 lidar_sigma_hit = rospy.get_param("/cognition/lasernoise", 0.1)  # sigma of Gaussian distribution of laser noise
-d_min = robotRadius + rospy.get_param("/cognition/mindistance", 0.05)  # we add a small buffer of 5 cm - d_min = 0.25 m
+d_min = robotRadius + rospy.get_param("/cognition/mindistance", 0.5)  # we add a small buffer of 5 cm - d_min = 0.25 m
 p_z_g = None
 intcheck = 1
 sorted_map = numpy.zeros((int(100), int(100)))
 pose = numpy.zeros((2, 1)) 
-T_delta = 2
+T_delta = 10
 
+#def markerpublisher(data, pos):
+#    global marker_ests
+#    #Publish it as a marker in rviz
+#    marker_ests = MarkerArray()
+#    marker_ests.markers = []
+#    
+#    k = 0
+#    for i in data:
+#        marker_est = Marker()
+#        marker_est.header.frame_id = "map"
+#        marker_est.header.stamp = rospy.Time.now()
+#        marker_est.pose.position.x = float(pos[0]) + float(data[k][0][0])
+#        marker_est.pose.position.y = float(pos[1]) + float(data[k][0][1])
+#        marker_est.pose.position.z = 0
+#        marker_est.pose.orientation.x = 0
+#        marker_est.pose.orientation.y = 0
+#        marker_est.pose.orientation.z = 0
+#        marker_est.pose.orientation.w = 1
+#        marker_est.ns = "est_pose_"+str(k)
+#        marker_est.id = 42+k
+#        marker_est.type = Marker.CUBE
+#        marker_est.action = Marker.ADD
+#        marker_est.color.r, marker_est.color.g, marker_est.color.b = (0, 255, 0)
+#        marker_est.color.a = 0.5
+#        marker_est.scale.x, marker_est.scale.y, marker_est.scale.z = (0.006, 0.006, 0.006)
+#        marker_ests.markers.append(marker_est)
+#        k+=1
+#    marker_pub.publish(marker_ests)
 
 def map_callback(map_data):
     map_w = map_data.info.width
+    print(str(map_w))
     map_h = map_data.info.height
+    print(str(map_h))
     rawdata = map_data.data 
     sorted_map = numpy.empty((int(map_h), int(map_w)))
     
@@ -52,12 +84,12 @@ def map_callback(map_data):
     #numpy.savetxt(path/'map_1',sorted_map,delimiter=',')
     for i in range(map_w): 
         for j in range(map_h): 
-            if rawdata[i + j * map_w] == -1:
-                sorted_map[j][i] = 0.5
-            elif rawdata[i + j * map_w] > 65:
-                sorted_map[j][i] = 1.0
-            else:
-                sorted_map[j][i] = rawdata[i + map_w * j ]/100.0
+    #        if rawdata[i + j * map_w] == -1:
+    #            sorted_map[j][i] = 0.5
+    #        elif rawdata[i + j * map_w] > 65:
+    #            sorted_map[j][i] = 1.0
+    #        else:
+            sorted_map[j][i] = rawdata[i + map_w * j ]/100.0
                # print(rawdata[i + map_w * j ])
     #numpy.savetxt(path/'map_2',sorted_map,delimiter=',')       
   #  print("saved_map") 
@@ -68,7 +100,8 @@ def position_callback():
         pose[0] = float(trans[0]) 
         pose[1] = float(trans[1])
     except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-        position_callback()
+        print(" ")
+   #     position_callback()
         
 
 def listener():
@@ -79,6 +112,8 @@ def listener():
     client.wait_for_server()
     #for get pos
     global tflistener
+    #global marker_pub
+    #marker_pub = rospy.Publisher("/visualization_markerarray", MarkerArray, queue_size = 2)
     tflistener = tf.TransformListener()
     cognitive_exploration(client)
         
@@ -103,12 +138,12 @@ def cognitive_exploration(client):
     time_pr_iteration = []
 
     while not rospy.is_shutdown():
-        map_data = rospy.wait_for_message("/map", OccupancyGrid)
+        map_data = rospy.wait_for_message("/map1", OccupancyGrid)
         #pos_data = rospy.wait_for_message("/obs0", Float64MultiArray) for get position
         position_callback()
         map_callback(map_data)
         position = numpy.array([pose[0][0], pose[1][0]])  # we only use the position not the heading
-        print( "positionx" + str(position[0]) + "positiony" + str(position[1]))
+        #print( "positionx" + str(position[0]) + "positiony" + str(position[1]))
 
         map_grid_probabilities_np = sorted_map.copy()
         map_grid_probabilities = torch.from_numpy(map_grid_probabilities_np)
@@ -129,9 +164,10 @@ def cognitive_exploration(client):
             # with contextlib.redirect_stdout(open(os.devnull, 'w')):
         tic = time.time()
         #z_a_tPlus_samples, z_s_tPlus_samples = agent.makePlan(t, T_delta, p_z_s_t, map_grid_probabilities, return_mode="raw_samples", p_z_g=p_z_g)
-        z_a_tPlus, z_s_tPlus_ = agent.makePlan(t, T_delta, p_z_s_t, map_grid_probabilities, return_mode="random", p_z_g=p_z_g)     
+        z_a_tPlus, z_s_tPlus_ = agent.makePlan(t, T_delta, p_z_s_t, map_grid_probabilities, return_mode="mean", p_z_g=p_z_g)     
         #z_a_tPlus, z_s_tPlus_ = agent.calculate_mean_state_action_means(z_a_tPlus_samples, z_s_tPlus_samples)
-        
+        #print(z_a_tPlus)
+        #markerpublisher(z_a_tPlus, z_s_t)
         #act[0] = z_s_tPlus_[0][0]
         #act[1] = z_s_tPlus_[0][1]
         #z_s_tPlus_ = z_s_tPlus_samples[0]
@@ -140,13 +176,10 @@ def cognitive_exploration(client):
 
             #convert plan to the format used by the simulator
    
-        if torch.abs(z_a_tPlus[0][0]) < 0.001 or torch.abs(z_a_tPlus[0][1]) < 0.001:
-            act[0] = z_s_t[0]
-            act[1] = z_s_t[1]
-       
-        else:
-            act[0] = z_s_t[0] + z_a_tPlus[0][0]
-            act[1] = z_s_t[1] + z_a_tPlus[0][1]
+      
+            
+        act[0] = z_s_t[0] + z_a_tPlus[0][0]
+        act[1] = z_s_t[1] + z_a_tPlus[0][1]
 
        
         

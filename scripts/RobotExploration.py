@@ -30,11 +30,11 @@ class RobotExploration(Planning):
 
         self.N_posterior_samples = 30
 
-        desirability_scale_factor = 0.1
+        desirability_scale_factor = 0.2
         # progress_scale_factor = 0.01
         # info_gain_scale_factor = 0.0075
-        progress_scale_factor = 0.01
-        info_gain_scale_factor = 2.0
+        progress_scale_factor = 1
+        info_gain_scale_factor = 1.0
         svi_epochs = 30
 
         # https://pyro.ai/examples/svi_part_iv.html
@@ -47,7 +47,7 @@ class RobotExploration(Planning):
         optimizer = pyro.optim.ClippedAdam(optim_args)
 
         # Model specific params:
-        standard_diviation = torch.tensor(0.2 / 3)  # 99.7% of samples within a circle of 25 cm
+        standard_diviation = torch.tensor(0.8 / 3)  # 99.7% of samples within a circle of 25 cm
         variance = standard_diviation * standard_diviation
         self.params["cov_s"] = variance * torch.eye(2)
         self.params["a_support"] = torch.tensor([2, 2], dtype=torch.float)  # 2 m in each direction
