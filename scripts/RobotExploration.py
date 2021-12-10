@@ -30,11 +30,11 @@ class RobotExploration(Planning):
 
         self.N_posterior_samples = 30
 
-        desirability_scale_factor = 0.2
+        desirability_scale_factor = 0.1
         # progress_scale_factor = 0.01
         # info_gain_scale_factor = 0.0075
-        progress_scale_factor = 1
-        info_gain_scale_factor = 1.0
+        progress_scale_factor = 0.01
+        info_gain_scale_factor = 2.0
         svi_epochs = 30
 
         # https://pyro.ai/examples/svi_part_iv.html

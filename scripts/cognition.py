@@ -29,7 +29,7 @@ lidar_range = int(rospy.get_param("/cognition/pixellaserrange", 60))  # laser ra
 lidar_FOV = rospy.get_param("/cognition/laserfow", 6.28)  # laser field of view in rad
 lidar_resolution = rospy.get_param("/cognition/laserresolution", 6.28/360)  # laser rotation resolution in rad
 lidar_sigma_hit = rospy.get_param("/cognition/lasernoise", 0)  # sigma of Gaussian distribution of laser noise
-d_min = robotRadius + rospy.get_param("/cognition/mindistance", 0.5)  # we add a small buffer of 5 cm - d_min = 0.25 m
+d_min = robotRadius + rospy.get_param("/cognition/mindistance", 0.05)  # we add a small buffer of 5 cm - d_min = 0.25 m
 p_z_g = None
 intcheck = 1
 sorted_map = numpy.zeros((int(100), int(100)))
@@ -67,30 +67,15 @@ T_delta = 3
 
 def map_callback(map_data):
     map_w = map_data.info.width
-    print(str(map_w))
+    #print(str(map_w))
     map_h = map_data.info.height
-    print(str(map_h))
+    #print(str(map_h))
     rawdata = map_data.data 
     sorted_map = numpy.empty((int(map_h), int(map_w)))
-    
-    #for i in range(map_w): 
-    #    for j in range(map_h): 
-    #        if rawdata[i + j * map_w] == -1:
-    #            sorted_map[i][map_h-1-j] = 0.5
-    #        if rawdata[i + j * map_w] > 65:
-    #            sorted_map[i][map_h-1-j] = 1.0
-    #        else:
-    #            sorted_map[i][map_h-1-j] = rawdata[i * map_w + j ]/100)
-    #numpy.savetxt(path/'map_1',sorted_map,delimiter=',')
     for i in range(map_w): 
         for j in range(map_h): 
-    #        if rawdata[i + j * map_w] == -1:
-    #            sorted_map[j][i] = 0.5
-    #        elif rawdata[i + j * map_w] > 65:
-    #            sorted_map[j][i] = 1.0
-    #        else:
             sorted_map[j][i] = rawdata[i + map_w * j ]/100.0
-               # print(rawdata[i + map_w * j ])
+    return sorted_map
     #numpy.savetxt(path/'map_2',sorted_map,delimiter=',')       
   #  print("saved_map") 
           
@@ -110,15 +95,13 @@ def listener():
     #rospy.Subscriber("/obs0", Float64MultiArray, position_callback)
     
     client = actionlib.SimpleActionClient('move_base',MoveBaseAction)
-    print("1")
     client.wait_for_server()
-    print("1")
     #for get pos
+    print("1")
     global tflistener
     #global marker_pub
     #marker_pub = rospy.Publisher("/visualization_markerarray", MarkerArray, queue_size = 2)
     tflistener = tf.TransformListener()
-    print("1")
     cognitive_exploration(client)
         
         
@@ -144,21 +127,19 @@ def cognitive_exploration(client):
     while not rospy.is_shutdown():
         map_data = rospy.wait_for_message("/map1", OccupancyGrid)
         #pos_data = rospy.wait_for_message("/obs0", Float64MultiArray) for get position
-        print("1")
         position_callback()
 
-        print("1")
-        map_callback(map_data)
-        print("1")
-        position = numpy.array([pose[0][0], pose[1][0]])  # we only use the position not the heading
+        map = map_callback(map_data)
+        print(map)
+        position = numpy.array([pose[0][0] + 10, pose[1][0] + 10])  # we only use the position not the heading
         print( "positionx" + str(position[0]) + "positiony" + str(position[1]))
 
-        map_grid_probabilities_np = sorted_map.copy()
+        map_grid_probabilities_np = map.copy()
         map_grid_probabilities = torch.from_numpy(map_grid_probabilities_np)
        # print(map_grid_probabilities)
-      
+        map_grid_probabilities
        
-        #map_grid_probabilities = torch.flip(map_grid_probabilities, [0])
+        map_grid_probabilities = torch.flip(map_grid_probabilities, [0])
         z_s_t = torch.tensor([position[0], position[1]], dtype=torch.float)
 
         def p_z_s_t():
@@ -186,8 +167,10 @@ def cognitive_exploration(client):
    
       
             
-        act[0] = z_s_t[0] + z_a_tPlus[0][0]
-        act[1] = z_s_t[1] + z_a_tPlus[0][1]
+        act[0] = z_s_t[0] + z_a_tPlus[0][0] - 10
+        act[1] = z_s_t[1] + z_a_tPlus[0][1] - 10
+        #act[0] = z_s_tPlus_[0][0] - 10
+        #act[1] = z_s_tPlus_[0][1] - 10
 
        
         
@@ -197,7 +180,7 @@ def cognitive_exploration(client):
         quat = euler_to_quaternion(direction_angle,0,0)
         
         goal = MoveBaseGoal()
-        goal.target_pose.header.frame_id = "map1"
+        goal.target_pose.header.frame_id = "map"
         #goal.target_pose.header.frame_id = "map"
         goal.target_pose.header.stamp = rospy.Time.now()
         goal.target_pose.pose.position.x = act[0]
