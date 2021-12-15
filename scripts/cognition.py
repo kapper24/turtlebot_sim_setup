@@ -24,7 +24,7 @@ import time
 from RobotExploration import RobotExploration
 path = Path('/home/melvin/turtle_ws/src/turtlebot_sim_setup/scripts')
 meter2pixel = int(rospy.get_param("/cognition/pixelsprmeter", 20))  # X pixel = 1 meter
-robotRadius = rospy.get_param("/cognition/robotradius", 0.18 / meter2pixel)  # robot radius in meter
+robotRadius = rospy.get_param("/cognition/robotradius", 0.01 / meter2pixel)  # robot radius in meter
 lidar_range = int(rospy.get_param("/cognition/pixellaserrange", 60))  # laser range in pixel
 lidar_FOV = rospy.get_param("/cognition/laserfow", 6.28)  # laser field of view in rad
 lidar_resolution = rospy.get_param("/cognition/laserresolution", 6.28/360)  # laser rotation resolution in rad
@@ -65,7 +65,7 @@ T_delta = 3
 #        k+=1
 #    marker_pub.publish(marker_ests)
 
-def map_callback(map_data):
+def map_callback(map_data, position):
     map_w = map_data.info.width
     #print(str(map_w))
     map_h = map_data.info.height
@@ -75,6 +75,13 @@ def map_callback(map_data):
     for i in range(map_w): 
         for j in range(map_h): 
             sorted_map[j][i] = rawdata[i + map_w * j ]/100.0
+            if rawdata[i + map_w * j ] == -1:
+                sorted_map[j][i] = 0.5
+            if not sorted_map[j][i] > 0.7:
+                distvec =  ((20 * pose[0][0]) - j)+ ((20 * pose[1][0]) - i)
+                if distvec < 2500:
+                    sorted_map[j][i] = 0
+            
     return sorted_map
     #numpy.savetxt(path/'map_2',sorted_map,delimiter=',')       
   #  print("saved_map") 
@@ -87,7 +94,7 @@ def position_callback():
     except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
         print(" ")
    #     position_callback()
-        
+
 
 def listener():
     rospy.init_node('cognition', anonymous=True)
@@ -125,11 +132,11 @@ def cognitive_exploration(client):
     time_pr_iteration = []
 
     while not rospy.is_shutdown():
-        map_data = rospy.wait_for_message("/map1", OccupancyGrid)
+        map_data = rospy.wait_for_message("/map", OccupancyGrid)
         #pos_data = rospy.wait_for_message("/obs0", Float64MultiArray) for get position
         position_callback()
 
-        map = map_callback(map_data)
+        map = map_callback(map_data, pose)
         print(map)
         position = numpy.array([pose[0][0] + 10, pose[1][0] + 10])  # we only use the position not the heading
         print( "positionx" + str(position[0]) + "positiony" + str(position[1]))
@@ -157,8 +164,7 @@ def cognitive_exploration(client):
         #z_a_tPlus, z_s_tPlus_ = agent.calculate_mean_state_action_means(z_a_tPlus_samples, z_s_tPlus_samples)
         #print(z_a_tPlus)
         #markerpublisher(z_a_tPlus, z_s_t)
-        #act[0] = z_s_tPlus_[0][0]
-        #act[1] = z_s_tPlus_[0][1]
+        
         #z_s_tPlus_ = z_s_tPlus_samples[0]
         toc = time.time()
         time_pr_iteration.append(toc - tic)
@@ -169,7 +175,7 @@ def cognitive_exploration(client):
             
         act[0] = z_s_t[0] + z_a_tPlus[0][0] - 10
         act[1] = z_s_t[1] + z_a_tPlus[0][1] - 10
-        #act[0] = z_s_tPlus_[0][0] - 10
+        #ct[0] = z_s_tPlus_[0][0] - 10
         #act[1] = z_s_tPlus_[0][1] - 10
 
        

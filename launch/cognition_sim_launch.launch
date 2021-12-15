@@ -4,6 +4,6 @@
   <!--<include file="$(find turtlebot_sim_setup)/launch/turtlebot_test_y.launch"/>-->
   <include file="$(find turtlebot3_slam)/launch/turtlebot3_slam.launch"/>
   <include file="$(find turtlebot3_navigation)/launch/move_base.launch"/>
-  <node pkg="gmapping3" type="slam_gmapping3" name="slam_gmapping1" output="screen"/>
+  <!--<node pkg="gmapping3" type="slam_gmapping3" name="slam_gmapping1" output="screen"/>-->
   <!--<include file="$(find turtlebot_sim_setup)/launch/cognition_module.launch"/>-->
 </launch>
