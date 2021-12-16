@@ -22,7 +22,7 @@ import tf
 from tf import listener
 import time
 from RobotExploration import RobotExploration
-path = Path('/home/melvin/turtle_ws/src/turtlebot_sim_setup/scripts')
+path = Path('/home/kasper/catkin_ws/src/turtlebot_sim_setup')
 meter2pixel = int(rospy.get_param("/cognition/pixelsprmeter", 20))  # X pixel = 1 meter
 robotRadius = rospy.get_param("/cognition/robotradius", 0.01 / meter2pixel)  # robot radius in meter
 lidar_range = int(rospy.get_param("/cognition/pixellaserrange", 60))  # laser range in pixel
@@ -78,13 +78,13 @@ def map_callback(map_data, position):
             if rawdata[i + map_w * j ] == -1:
                 sorted_map[j][i] = 0.5
             if not sorted_map[j][i] > 0.7:
-                distvec =  ((20 * pose[0][0]) - j)+ ((20 * pose[1][0]) - i)
+                distvec =  (((20 * (pose[0][0]+10)) - j*((20 * (pose[0][0]+10)) - j)))+ (((20 * (pose[1][0]+10)) - i)*((20 * (pose[1][0]+10)) - i))
                 if distvec < 2500:
                     sorted_map[j][i] = 0
-            
+    numpy.savetxt(path/'map_2',sorted_map,delimiter=',')            
     return sorted_map
-    #numpy.savetxt(path/'map_2',sorted_map,delimiter=',')       
-  #  print("saved_map") 
+       
+    #print("saved_map") 
           
 def position_callback():
     try:
@@ -93,7 +93,7 @@ def position_callback():
         pose[1] = float(trans[1])
     except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
         print(" ")
-   #     position_callback()
+    #position_callback()
 
 
 def listener():
